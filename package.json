@@ -1,0 +1,12 @@
+{
+  "name": "short-form-view-monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "build": "pnpm -C packages/short-form-view build",
+    "test": "pnpm -C packages/short-form-view test",
+    "test:run": "pnpm -C packages/short-form-view test:run",
+    "typecheck": "pnpm -r --if-present typecheck"
+  },
+  "packageManager": "pnpm@11.0.0"
+}
