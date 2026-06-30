@@ -9,6 +9,10 @@
       <stop offset="0" stop-color="#ff5d8f"/>
       <stop offset="1" stop-color="#7c5cff"/>
     </linearGradient>
+    <linearGradient id="card2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#19d3ff"/>
+      <stop offset="1" stop-color="#5b6bff"/>
+    </linearGradient>
     <linearGradient id="title" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#ffffff"/>
       <stop offset="1" stop-color="#b9c7ff"/>
@@ -45,7 +49,7 @@
     <text x="92" y="120" fill="#19d3ff" font-size="14" font-weight="700" letter-spacing="4">REACT · TYPESCRIPT · ZERO-DEPENDENCY</text>
     <text x="88" y="206" fill="url(#title)" font-size="78" font-weight="800" letter-spacing="-2">short-form-view</text>
     <text x="92" y="262" fill="#aab2c8" font-size="23" font-weight="500">Instagram / TikTok-style vertical swipe pager.</text>
-    <text x="92" y="296" fill="#7e8aa8" font-size="20" font-weight="500">Mount any view per slot — video, ad grids, banners, anything.</text>
+    <text x="92" y="296" fill="#7e8aa8" font-size="20" font-weight="500">Swipe up, next clip — smooth, virtualized, SSR-safe.</text>
 
     <!-- feature pills -->
     <g font-size="14" font-weight="600">
@@ -72,68 +76,56 @@
     </g>
   </g>
 
-  <!-- right: phone showing a mid-swipe feed -->
+  <!-- right: phone swiping from one video to the next -->
   <g filter="url(#drop)">
     <rect x="872" y="80" width="216" height="360" rx="38" fill="#13141b" stroke="url(#accent)" stroke-width="2"/>
   </g>
   <rect x="886" y="96" width="188" height="328" rx="26" fill="#0d0e14"/>
 
   <g clip-path="url(#screen)">
-    <!-- current video card (sliding up, clipped at top) -->
-    <rect x="886" y="58" width="188" height="300" rx="20" fill="url(#card1)"/>
-    <circle cx="980" cy="200" r="30" fill="#ffffff" fill-opacity="0.18"/>
-    <path d="M971 184 l24 16 -24 16 z" fill="#ffffff"/>
-    <text x="902" y="338" fill="#ffffff" font-size="15" font-weight="700">Clip 12</text>
-    <rect x="902" y="306" width="64" height="6" rx="3" fill="#ffffff" fill-opacity="0.5"/>
+    <!-- current video (Clip 12) sliding up, clipped at top -->
+    <rect x="886" y="24" width="188" height="278" rx="20" fill="url(#card1)"/>
+    <circle cx="980" cy="186" r="30" fill="#ffffff" fill-opacity="0.18"/>
+    <path d="M971 170 l24 16 -24 16 z" fill="#ffffff"/>
+    <rect x="902" y="270" width="64" height="6" rx="3" fill="#ffffff" fill-opacity="0.5"/>
+    <text x="902" y="294" fill="#ffffff" font-size="15" font-weight="700">Clip 12</text>
 
-    <!-- next item peeking: 2x2 ad grid -->
-    <rect x="886" y="372" width="188" height="150" rx="20" fill="#101119"/>
-    <rect x="900" y="388" width="80" height="56" rx="10" fill="#ff5d5d"/>
-    <rect x="988" y="388" width="80" height="56" rx="10" fill="#5d9dff"/>
-    <rect x="900" y="452" width="80" height="56" rx="10" fill="#5dffa0"/>
-    <rect x="988" y="452" width="80" height="56" rx="10" fill="#ffd35d"/>
+    <!-- next video (Clip 13) coming up from below, peeking -->
+    <rect x="886" y="314" width="188" height="240" rx="20" fill="url(#card2)"/>
+    <circle cx="980" cy="392" r="24" fill="#ffffff" fill-opacity="0.18"/>
+    <path d="M973 380 l18 12 -18 12 z" fill="#ffffff"/>
+    <text x="902" y="350" fill="#ffffff" font-size="14" font-weight="700">Clip 13</text>
 
     <!-- status bar -->
     <text x="902" y="118" fill="#ffffff" font-size="11" font-weight="700" font-family="ui-monospace, monospace">9:41</text>
     <rect x="1034" y="110" width="28" height="9" rx="3" fill="#ffffff" fill-opacity="0.55"/>
 
     <!-- pagination dots -->
-    <circle cx="1058" cy="186" r="3.4" fill="#ffffff"/>
-    <circle cx="1058" cy="202" r="3" fill="#ffffff" fill-opacity="0.4"/>
-    <circle cx="1058" cy="218" r="3" fill="#ffffff" fill-opacity="0.4"/>
+    <circle cx="1058" cy="172" r="3.4" fill="#ffffff"/>
+    <circle cx="1058" cy="188" r="3" fill="#ffffff" fill-opacity="0.4"/>
+    <circle cx="1058" cy="204" r="3" fill="#ffffff" fill-opacity="0.4"/>
   </g>
 
   <!-- swipe-up indicator -->
   <g opacity="0.92">
-    <circle cx="980" cy="270" r="22" fill="#0a0b10" fill-opacity="0.55" stroke="#ffffff" stroke-opacity="0.85" stroke-width="1.5"/>
-    <path d="M980 280 l0 -20 M972 268 l8 -8 8 8" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  </g>
-  <g stroke="#ffffff" stroke-opacity="0.32" stroke-width="2" stroke-linecap="round">
-    <path d="M980 318 l0 14"/>
-    <path d="M980 340 l0 9" stroke-opacity="0.18"/>
+    <circle cx="980" cy="246" r="22" fill="#0a0b10" fill-opacity="0.55" stroke="#ffffff" stroke-opacity="0.85" stroke-width="1.5"/>
+    <path d="M980 256 l0 -20 M972 244 l8 -8 8 8" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
   </g>
 
-  <!-- floating "any view" chips with connectors -->
+  <!-- labels: now playing -> next clip -->
   <g font-size="13" font-weight="700">
-    <line x1="872" y1="150" x2="812" y2="150" stroke="#7c5cff" stroke-opacity="0.5" stroke-width="1.5"/>
+    <line x1="872" y1="170" x2="812" y2="170" stroke="#ff5d8f" stroke-opacity="0.5" stroke-width="1.5"/>
     <g>
-      <rect x="720" y="134" width="92" height="32" rx="16" fill="#13141b" stroke="#ff5d8f" stroke-opacity="0.7"/>
-      <circle cx="738" cy="150" r="4" fill="#ff5d8f"/>
-      <text x="752" y="155" fill="#e7ecf8">video</text>
+      <rect x="678" y="154" width="134" height="32" rx="16" fill="#13141b" stroke="#ff5d8f" stroke-opacity="0.7"/>
+      <circle cx="696" cy="170" r="4" fill="#ff5d8f"/>
+      <text x="710" y="175" fill="#e7ecf8">now playing</text>
     </g>
 
-    <line x1="1088" y1="200" x2="1140" y2="200" stroke="#19d3ff" stroke-opacity="0.5" stroke-width="1.5"/>
+    <line x1="1088" y1="372" x2="1132" y2="372" stroke="#19d3ff" stroke-opacity="0.5" stroke-width="1.5"/>
     <g>
-      <rect x="1140" y="184" width="86" height="32" rx="16" fill="#13141b" stroke="#19d3ff" stroke-opacity="0.7"/>
-      <circle cx="1158" cy="200" r="4" fill="#19d3ff"/>
-      <text x="1172" y="205" fill="#e7ecf8">banner</text>
-    </g>
-
-    <line x1="1088" y1="360" x2="1132" y2="372" stroke="#5dffa0" stroke-opacity="0.5" stroke-width="1.5"/>
-    <g>
-      <rect x="1126" y="360" width="108" height="32" rx="16" fill="#13141b" stroke="#5dffa0" stroke-opacity="0.7"/>
-      <circle cx="1144" cy="376" r="4" fill="#5dffa0"/>
-      <text x="1158" y="381" fill="#e7ecf8">2×2 ad grid</text>
+      <rect x="1126" y="356" width="104" height="32" rx="16" fill="#13141b" stroke="#19d3ff" stroke-opacity="0.7"/>
+      <circle cx="1144" cy="372" r="4" fill="#19d3ff"/>
+      <text x="1158" y="377" fill="#e7ecf8">next clip</text>
     </g>
   </g>
 </svg>

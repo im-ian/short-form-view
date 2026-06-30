@@ -5,7 +5,9 @@
 <br/>
 
 **Instagram / TikTok-style vertical swipe pager for React.**
-Mount any view per slot — video, ad grids, banners, anything — into one smooth, virtualized, SSR-safe feed.
+A smooth, virtualized, SSR-safe vertical feed — render any view per slot.
+
+### [▶ Live demo](https://im-ian.github.io/short-form-view/)
 
 <br/>
 
@@ -20,18 +22,12 @@ Mount any view per slot — video, ad grids, banners, anything — into one smoo
 
 ---
 
-## Why
-
-It is **not** a video player. It is a *view connector*. You give it a list and a render function; it connects arbitrary full-viewport views into a swipeable feed. Mixed content with no constraint is the whole point:
-
-```
-video · video · video · ad (2×2 HTML grid) · video · video · video · ad (video + bottom banner) · …
-```
+## Features
 
 - **Gesture-driven** — configurable swipe threshold, velocity flick, edge resistance. Touch, mouse, wheel, and keyboard all drive one engine.
 - **Virtualized** — only the active item ± overscan are mounted.
 - **Append-safe** — growing `data` from an API mid-scroll never reflows or remounts existing items.
-- **Zero runtime dependency** — no animation library, no CSS import. Just React.
+- **Zero runtime dependency** — no animation library, no CSS import.
 - **SSR-safe** — works in Next.js (App Router and Pages).
 - **Rich callbacks** — swipe, item enter/leave lifecycle, and left/center/right press-hold + tap zones.
 - **No re-render on drag** — the track transform is written imperatively via `requestAnimationFrame`.
@@ -49,38 +45,38 @@ pnpm add short-form-view   # react >= 18 is a peer dependency
 import { useCallback, useState } from 'react'
 import { ShortFormView } from 'short-form-view'
 
-type FeedItem =
-  | { id: string; kind: 'video'; src: string }
-  | { id: string; kind: 'ad'; tiles: string[] }
+type Clip = { id: string; src: string }
 
 export default function Feed() {
-  const [items, setItems] = useState<FeedItem[]>(initialItems)
+  const [clips, setClips] = useState<Clip[]>(initialClips)
 
   const loadMore = useCallback(() => {
-    fetchMore().then((more) => setItems((prev) => [...prev, ...more]))
+    fetchMore().then((more) => setClips((prev) => [...prev, ...more]))
   }, [])
 
   return (
-    <ShortFormView<FeedItem>
-      data={items}
-      keyExtractor={(it) => it.id}
-      threshold={0.2}                                  // commit a swipe at 20% of viewport
+    <ShortFormView<Clip>
+      data={clips}
+      keyExtractor={(c) => c.id}
+      threshold={0.2}                                   // commit a swipe at 20% of the viewport
       onSwiped={({ from, to, direction }) => track(from, to, direction)}
       onIndexChange={(i, { reason }) => console.log('now at', i, 'via', reason)}
-      onEndReached={loadMore}                          // append more, no reflow
-      onHoldStart={({ side }) => pauseOrPeek(side)}    // press-and-hold left/right
-      renderItem={(item, state) =>
-        item.kind === 'video'
-          ? <video src={item.src} muted loop autoPlay={state.isActive}
-                   style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          : <AdGrid tiles={item.tiles} />              // any custom view
-      }
+      onEndReached={loadMore}                           // append more, no reflow
+      renderItem={(clip, state) => (
+        <video
+          src={clip.src}
+          muted
+          loop
+          autoPlay={state.isActive}                     // play only while focused
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      )}
     />
   )
 }
 ```
 
-A video reads `state.isActive` to play only while focused; an ad view ignores it. There is no limit on what a slot can render.
+`renderItem` returns any React node, so a slot can be a video, an image, or any custom component — the library just connects them into the swipe feed.
 
 ## What you get
 
@@ -102,7 +98,7 @@ The active slot is overlaid with left / center / right zones. A stationary press
 | Path | What |
 |------|------|
 | [`packages/short-form-view`](packages/short-form-view) | the library — gesture engine, virtualization, item lifecycle, SSR utils |
-| [`examples/next-demo`](examples/next-demo) | Next.js App Router demo: mixed video / 2×2 ad-grid / video-ad feed with infinite append |
+| [`examples/next-demo`](examples/next-demo) | Next.js App Router demo with infinite append |
 | [`docs/superpowers`](docs/superpowers) | design spec + implementation plan |
 
 ```bash

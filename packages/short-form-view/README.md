@@ -1,8 +1,6 @@
 # short-form-view
 
-Instagram / TikTok-style **vertical swipe pager** for React. You supply any view per slot — a video, a 2×2 HTML ad grid, a video ad with a bottom banner, anything — and the library connects them into a smooth, swipeable, full-viewport feed.
-
-It is **not** a video player. It is a *view connector*: mixed feeds with no constraint on content type are a first-class use case.
+Instagram / TikTok-style **vertical swipe pager** for React. `renderItem` returns any React node, so each slot can be a video, an image, or any custom component — the library connects them into a smooth, swipeable, full-viewport feed.
 
 - **Gesture-driven** — configurable swipe threshold, velocity flick, edge resistance.
 - **Virtualized** — only the active item ± overscan are mounted.
@@ -18,42 +16,38 @@ pnpm add short-form-view
 # react >= 18 is a peer dependency
 ```
 
-## Quick start — a mixed video + ad feed
+## Quick start
 
 ```tsx
 'use client'
 import { useCallback, useState } from 'react'
 import { ShortFormView } from 'short-form-view'
 
-type FeedItem =
-  | { id: string; kind: 'video'; src: string }
-  | { id: string; kind: 'ad'; tiles: string[] }
+type Clip = { id: string; src: string }
 
 export default function Feed() {
-  const [items, setItems] = useState<FeedItem[]>(initialItems)
+  const [clips, setClips] = useState<Clip[]>(initialClips)
 
   const loadMore = useCallback(() => {
-    fetchMore().then((more) => setItems((prev) => [...prev, ...more]))
+    fetchMore().then((more) => setClips((prev) => [...prev, ...more]))
   }, [])
 
   return (
-    <ShortFormView<FeedItem>
-      data={items}
-      keyExtractor={(it) => it.id}
+    <ShortFormView<Clip>
+      data={clips}
+      keyExtractor={(c) => c.id}
       threshold={0.2}
       onIndexChange={(i, meta) => console.log('now at', i, 'via', meta.reason)}
       onEndReached={loadMore}
-      renderItem={(item, state) =>
-        item.kind === 'video'
-          ? <video src={item.src} muted loop autoPlay={state.isActive} style={{ width: '100%', height: '100%' }} />
-          : <AdGrid tiles={item.tiles} />
-      }
+      renderItem={(clip, state) => (
+        <video src={clip.src} muted loop autoPlay={state.isActive} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      )}
     />
   )
 }
 ```
 
-Each slot receives an `ItemState`. A video reads `state.isActive` to play only while it is the focused slot; an ad view ignores it. There is no limit on what a slot can render.
+Each slot receives an `ItemState`. A video reads `state.isActive` to play only while it is the focused slot. `renderItem` returns any React node, so a slot can render any custom component too.
 
 ## Props
 
