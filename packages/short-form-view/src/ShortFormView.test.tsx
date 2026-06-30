@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, act } from '@testing-library/react'
+import { render, act, fireEvent, createEvent } from '@testing-library/react'
 import { createRef } from 'react'
 import { ShortFormView } from './ShortFormView'
 import type { ShortFormHandle, ShortFormViewProps } from './types'
@@ -79,5 +79,14 @@ describe('ShortFormView', () => {
       <ShortFormView<Slide> data={mkData(5)} index={2} keyExtractor={(s) => s.id} renderItem={renderItem} />,
     )
     expect(getByTestId('slide-slide-2').getAttribute('data-active')).toBe('true')
+  })
+
+  it('disables text selection and prevents native drag on the container', () => {
+    const { getByRole } = renderView()
+    const container = getByRole('group')
+    expect(container).toHaveStyle({ userSelect: 'none' })
+    const dragEvent = createEvent.dragStart(container)
+    fireEvent(container, dragEvent)
+    expect(dragEvent.defaultPrevented).toBe(true)
   })
 })

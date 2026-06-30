@@ -76,6 +76,11 @@ function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<S
     touchAction: 'none',
     overscrollBehavior: 'contain',
     outline: 'none',
+    // Dragging a slide should never select text or start an image/link ghost
+    // drag. Inherited by all items; consumers can opt back in via itemStyle.
+    userSelect: 'none',
+    WebkitUserSelect: 'none',
+    WebkitTouchCallout: 'none',
     ...style,
   }
 
@@ -98,6 +103,7 @@ function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<S
       role="group"
       aria-roledescription="carousel"
       aria-label={ariaLabel}
+      onDragStart={(e) => e.preventDefault()}
     >
       <div ref={trackRef} style={trackStyle}>
         {windowIndices.map((i) => {
