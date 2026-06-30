@@ -1,13 +1,24 @@
 import { useEffect, useRef } from 'react'
 import type { SwipeEngineApi } from '../useSwipeEngine'
 
-// Minimum accumulated delta (px) before a wheel gesture commits a step.
-const WHEEL_STEP = 20
-// A wheel gesture is considered finished once no wheel event arrives for this
-// long. Trackpad/inertial scrolling fires a long tail of events; locking until
-// idle guarantees one flick == one step instead of double-advancing when an
-// old fixed cooldown expired mid-momentum.
-const WHEEL_IDLE_MS = 140
+// A new wheel gesture begins once the wheel has been silent for at least this
+// long. Trackpad frames are ~16ms apart (one continuous gesture); deliberate
+// mouse-wheel notches are spaced further apart (each a fresh gesture).
+const WHEEL_GAP_MS = 60
+// A continuous, never-idle stream (free-spin or smooth-scroll wheels) is allowed
+// to advance again after this long, so it can never get stuck on a single step.
+const WHEEL_MAX_LOCK_MS = 450
+// Normalized delta (px) that must accumulate before a step commits.
+const WHEEL_STEP = 16
+// Normalization for non-pixel wheel modes (Firefox mouse wheels report lines).
+const LINE_HEIGHT = 16
+const PAGE_HEIGHT = 800
+
+function normalizeDelta(e: WheelEvent): number {
+  if (e.deltaMode === 1) return e.deltaY * LINE_HEIGHT
+  if (e.deltaMode === 2) return e.deltaY * PAGE_HEIGHT
+  return e.deltaY
+}
 
 export function useWheelNav(p: {
   containerRef: React.RefObject<HTMLElement | null>
@@ -17,43 +28,51 @@ export function useWheelNav(p: {
   const { containerRef, engine, disabled } = p
   const accum = useRef(0)
   const locked = useRef(false)
-  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lockStart = useRef(0)
+  const lastTime = useRef(Number.NEGATIVE_INFINITY)
+  const gestureDir = useRef(0)
 
   useEffect(() => {
     const el = containerRef.current
     if (!el || disabled) return
 
-    const endGesture = () => {
-      locked.current = false
-      accum.current = 0
-    }
-
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
+      const dy = normalizeDelta(e)
+      if (dy === 0) return
 
-      // Every event refreshes the idle timer; the gesture only ends (and the
-      // next step becomes possible) once the wheel has been silent for a beat.
-      if (idleTimer.current) clearTimeout(idleTimer.current)
-      idleTimer.current = setTimeout(endGesture, WHEEL_IDLE_MS)
+      const now = e.timeStamp
+      const dir = dy > 0 ? 1 : -1
+
+      // A gesture ends — and the lock releases — in one of three ways:
+      const newGesture = now - lastTime.current > WHEEL_GAP_MS
+      // ...a reverse strong enough to be real intent (sub-threshold opposite
+      // inertia noise must NOT break the lock, or it re-fires the tail)...
+      const strongReverse =
+        locked.current && dir !== gestureDir.current && Math.abs(dy) >= WHEEL_STEP
+      // ...or a never-idle stream that has been locked too long.
+      const lockExpired = locked.current && now - lockStart.current >= WHEEL_MAX_LOCK_MS
+
+      if (newGesture || strongReverse || lockExpired) {
+        locked.current = false
+        accum.current = 0
+      }
+      lastTime.current = now
 
       if (locked.current) return
 
-      accum.current += e.deltaY
-      if (accum.current > WHEEL_STEP) {
-        engine.next('wheel')
+      accum.current += dy
+      if (Math.abs(accum.current) >= WHEEL_STEP) {
+        if (dir > 0) engine.next('wheel')
+        else engine.prev('wheel')
         locked.current = true
-        accum.current = 0
-      } else if (accum.current < -WHEEL_STEP) {
-        engine.prev('wheel')
-        locked.current = true
+        lockStart.current = now
+        gestureDir.current = dir
         accum.current = 0
       }
     }
 
     el.addEventListener('wheel', onWheel, { passive: false })
-    return () => {
-      if (idleTimer.current) clearTimeout(idleTimer.current)
-      el.removeEventListener('wheel', onWheel)
-    }
+    return () => el.removeEventListener('wheel', onWheel)
   }, [containerRef, engine, disabled])
 }
