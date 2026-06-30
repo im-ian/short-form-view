@@ -50,6 +50,12 @@ test('visual screenshots at key viewports', async ({ page }) => {
   for (const [w, h] of [[320, 640], [768, 1024], [1024, 768], [1440, 900]] as const) {
     await page.setViewportSize({ width: w, height: h })
     await page.goto('/')
-    await expect(page).toHaveScreenshot(`feed-${w}x${h}.png`, { maxDiffPixelRatio: 0.02 })
+    await page.waitForTimeout(400)
+    // Mask live media (video frames, remote avatars/images) so the chrome layout
+    // is what is compared deterministically.
+    await expect(page).toHaveScreenshot(`feed-${w}x${h}.png`, {
+      maxDiffPixelRatio: 0.02,
+      mask: [page.locator('video'), page.locator('img')],
+    })
   }
 })

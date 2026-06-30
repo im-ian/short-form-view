@@ -1,0 +1,67 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #000;
+  overscroll-behavior: none;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+.sfv-stage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 22%, #1b1233, #000 72%);
+}
+
+.sfv-phone {
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  background: #000;
+}
+
+@media (min-width: 520px) {
+  .sfv-phone {
+    width: 430px;
+    height: min(92dvh, 900px);
+    border-radius: 38px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 0 10px #0d0d12, 0 0 0 11px #26262e;
+  }
+}
+
+@keyframes sfv-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.sfv-spin {
+  animation: sfv-spin 8s linear infinite;
+}
+
+@keyframes sfv-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.sfv-marquee {
+  animation: sfv-marquee 10s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sfv-spin,
+  .sfv-marquee {
+    animation: none;
+  }
+}
