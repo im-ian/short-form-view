@@ -58,17 +58,21 @@ Each slot receives an `ItemState`. A video reads `state.isActive` to play only w
 | `keyExtractor` | `(item: T, index: number) => string \| number` | — | Stable key per item. |
 | `initialIndex` | `number` | `0` | Starting index (uncontrolled). |
 | `index` | `number` | — | Controlled active index (use with `onIndexChange`). |
-| `onIndexChange` | `(index, { reason }) => void` | — | Fires on any index change. `reason`: `swipe \| wheel \| key \| api`. |
+| `onIndexChange` | `(index, { reason }) => void` | — | Fires on any index change. `reason`: `swipe \| wheel \| key \| api \| data`. |
 | `onSwiped` | `({ from, to, direction, velocity }) => void` | — | Fires on a user swipe. `direction`: `up \| down`. |
+| `preserveActiveItemOnDataChange` | `boolean` | `false` | Keep the same active item by key when `data` prepends, reorders, or shrinks. |
 | `threshold` | `number` | `0.2` | Distance to commit a swipe. |
 | `thresholdUnit` | `fraction \| px` | `fraction` | `fraction` = portion of viewport height; `px` = absolute. |
 | `velocityThreshold` | `number` | `0.3` | px/ms flick speed that commits even below `threshold`. |
 | `resistance` | `number` | `0.3` | Overscroll drag damping at the first/last edge. |
 | `loop` | `boolean` | `false` | Wrap from last to first. |
 | `disabled` | `boolean` | `false` | Disable all gestures. |
+| `ignoreInteractiveElements` | `boolean` | `true` | Do not start feed gestures from buttons, links, form controls, editable content, or common interactive roles. |
 | `transitionDuration` | `number` | `300` | Snap animation duration (ms). |
 | `easing` | `string` | `cubic-bezier(.16,1,.3,1)` | Snap easing. |
 | `overscan` | `number` | `1` | Items mounted on each side of the active one. |
+| `prefetchRange` | `number` | `1` | How many items before/after the active item should receive prefetch hints. |
+| `onPrefetch` | `({ index, item, activeIndex, distance }) => void` | — | Fires once per item key when it enters the prefetch range. |
 | `onEndReached` | `() => void` | — | Fires when near the end — fetch and append more. |
 | `onEndReachedThreshold` | `number` | `2` | How many items from the end triggers `onEndReached`. |
 | `onItemEnter` | `(index, item) => void` | — | An item became the active slot. |
@@ -81,6 +85,7 @@ Each slot receives an `ItemState`. A video reads `state.isActive` to play only w
 | `className` / `style` | — | — | Applied to the container. |
 | `itemClassName` / `itemStyle` | — | — | Applied to each item wrapper. |
 | `ariaLabel` | `string` | — | Accessible label for the carousel container. |
+| `getItemAriaLabel` | `(index, item, total) => string` | `Slide N of M` | Accessible label for each slide wrapper. |
 
 ### `ItemState` (passed to `renderItem`)
 
@@ -106,6 +111,36 @@ const ref = useRef<ShortFormHandle>(null)
 ## Press-and-hold zones
 
 The active slot is overlaid with left / center / right zones. A stationary press past `holdDelay` fires `onHoldStart` (e.g. pause the video, dim the UI); releasing fires `onHoldEnd`. A quick press-release fires `onTapZone`. Crucially, **any vertical movement past a small slop becomes a swipe instead of a hold**, so holding and swiping never fight.
+
+## Interactive children
+
+By default, a pointer gesture that starts on native interactive elements (`button`, `a[href]`, form controls, editable content, and common interactive roles) is left alone instead of becoming a feed swipe or hold. Set `ignoreInteractiveElements={false}` if you want the old "everything can start a swipe" behavior. Any descendant can also opt out explicitly with `data-sfv-ignore-gesture`, which is always respected.
+
+```tsx
+<button data-sfv-ignore-gesture onClick={openProduct}>
+  Shop now
+</button>
+```
+
+## Preserving the active item
+
+`preserveActiveItemOnDataChange` is useful when a feed prepends refreshed items or receives a reordered page. The component remembers the active item's key and, after `data` changes, moves to that item's new index without animation. This requires stable, unique keys from `keyExtractor`. If the active key disappears, the current index is clamped to the new data length.
+
+In controlled mode, the component still emits `onIndexChange(nextIndex, { reason: 'data' })`; the parent must apply that index just like it does for `swipe`, `wheel`, `key`, or `api` changes.
+
+## Prefetch hints
+
+Use `onPrefetch` to prepare nearby items without mounting more DOM. The callback fires once per item key when an item enters the `prefetchRange`; the current active item is marked seen so it is not reported later as a prefetch candidate.
+
+```tsx
+<ShortFormView
+  data={clips}
+  keyExtractor={(clip) => clip.id}
+  prefetchRange={2}
+  onPrefetch={({ item }) => warmVideoCache(item.src)}
+  renderItem={renderClip}
+/>
+```
 
 ## Navigation inputs
 

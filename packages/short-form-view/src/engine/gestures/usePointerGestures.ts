@@ -4,6 +4,40 @@ import type { ZoneEvent } from '../../types'
 import { classifyPointerEnd, zoneFromX } from '../holds'
 
 const SLOP = 8
+const IGNORE_GESTURE_SELECTOR = '[data-sfv-ignore-gesture]'
+const INTERACTIVE_SELECTOR = [
+  'a[href]',
+  'button',
+  'input',
+  'select',
+  'textarea',
+  'summary',
+  '[contenteditable]:not([contenteditable="false"])',
+  '[role="button"]',
+  '[role="checkbox"]',
+  '[role="link"]',
+  '[role="menuitem"]',
+  '[role="option"]',
+  '[role="radio"]',
+  '[role="switch"]',
+  '[role="tab"]',
+  '[role="textbox"]',
+].join(',')
+
+function closestWithin(target: EventTarget | null, root: HTMLElement, selector: string): Element | null {
+  if (!(target instanceof Element)) return null
+  const match = target.closest(selector)
+  return match && root.contains(match) ? match : null
+}
+
+export function shouldIgnoreGestureTarget(
+  target: EventTarget | null,
+  root: HTMLElement,
+  ignoreInteractiveElements: boolean,
+): boolean {
+  if (closestWithin(target, root, IGNORE_GESTURE_SELECTOR)) return true
+  return ignoreInteractiveElements && closestWithin(target, root, INTERACTIVE_SELECTOR) != null
+}
 
 export function usePointerGestures(p: {
   containerRef: React.RefObject<HTMLElement | null>
@@ -12,11 +46,15 @@ export function usePointerGestures(p: {
   zones: { left: number; right: number }
   holdDelay: number
   disabled: boolean
+  ignoreInteractiveElements: boolean
   onHoldStart?: (e: ZoneEvent) => void
   onHoldEnd?: (e: ZoneEvent) => void
   onTapZone?: (e: ZoneEvent) => void
 }): void {
-  const { containerRef, engine, getIndex, zones, holdDelay, disabled, onHoldStart, onHoldEnd, onTapZone } = p
+  const {
+    containerRef, engine, getIndex, zones, holdDelay, disabled,
+    ignoreInteractiveElements, onHoldStart, onHoldEnd, onTapZone,
+  } = p
 
   const state = useRef({
     active: false, pointerId: -1,
@@ -26,8 +64,14 @@ export function usePointerGestures(p: {
   })
 
   // Keep the latest callbacks/config in a ref so listeners bind once.
-  const ext = useRef({ engine, getIndex, zones, holdDelay, onHoldStart, onHoldEnd, onTapZone, disabled })
-  ext.current = { engine, getIndex, zones, holdDelay, onHoldStart, onHoldEnd, onTapZone, disabled }
+  const ext = useRef({
+    engine, getIndex, zones, holdDelay, ignoreInteractiveElements,
+    onHoldStart, onHoldEnd, onTapZone, disabled,
+  })
+  ext.current = {
+    engine, getIndex, zones, holdDelay, ignoreInteractiveElements,
+    onHoldStart, onHoldEnd, onTapZone, disabled,
+  }
 
   useEffect(() => {
     const el = containerRef.current
@@ -43,6 +87,7 @@ export function usePointerGestures(p: {
     const onPointerDown = (e: PointerEvent) => {
       const cfg = ext.current
       if (cfg.disabled) return
+      if (shouldIgnoreGestureTarget(e.target, el, cfg.ignoreInteractiveElements)) return
       const rect = el.getBoundingClientRect()
       const s = state.current
       s.active = true; s.pointerId = e.pointerId

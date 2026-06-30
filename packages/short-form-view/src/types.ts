@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from 'react'
 
 export type SwipeDirection = 'up' | 'down'
 export type ZoneSide = 'left' | 'center' | 'right'
-export type IndexChangeReason = 'swipe' | 'wheel' | 'key' | 'api'
+export type IndexChangeReason = 'swipe' | 'wheel' | 'key' | 'api' | 'data'
 export type ThresholdUnit = 'fraction' | 'px'
 
 export interface ItemState {
@@ -30,6 +30,13 @@ export interface IndexChangeMeta {
   reason: IndexChangeReason
 }
 
+export interface PrefetchEvent<T> {
+  index: number
+  item: T
+  activeIndex: number
+  distance: number
+}
+
 export interface ShortFormHandle {
   scrollToIndex: (index: number, opts?: { animated?: boolean }) => void
   next: () => void
@@ -46,6 +53,7 @@ export interface ShortFormViewProps<T> {
   index?: number
   onIndexChange?: (index: number, meta: IndexChangeMeta) => void
   onSwiped?: (e: SwipeEvent) => void
+  preserveActiveItemOnDataChange?: boolean
 
   threshold?: number
   thresholdUnit?: ThresholdUnit
@@ -53,11 +61,14 @@ export interface ShortFormViewProps<T> {
   resistance?: number
   loop?: boolean
   disabled?: boolean
+  ignoreInteractiveElements?: boolean
 
   transitionDuration?: number
   easing?: string
 
   overscan?: number
+  prefetchRange?: number
+  onPrefetch?: (e: PrefetchEvent<T>) => void
   onEndReached?: () => void
   onEndReachedThreshold?: number
 
@@ -75,4 +86,5 @@ export interface ShortFormViewProps<T> {
   itemClassName?: string
   itemStyle?: CSSProperties
   ariaLabel?: string
+  getItemAriaLabel?: (index: number, item: T, total: number) => string
 }

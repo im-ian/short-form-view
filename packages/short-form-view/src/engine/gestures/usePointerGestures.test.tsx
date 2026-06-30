@@ -12,11 +12,17 @@ function Harness(props: any) {
     zones: { left: 0.33, right: 0.33 },
     holdDelay: 250,
     disabled: false,
+    ignoreInteractiveElements: props.ignoreInteractiveElements ?? true,
     onHoldStart: props.onHoldStart,
     onHoldEnd: props.onHoldEnd,
     onTapZone: props.onTapZone,
   })
-  return <div ref={ref} data-testid="c" style={{ width: 300, height: 600 }} />
+  return (
+    <div ref={ref} data-testid="c" style={{ width: 300, height: 600 }}>
+      <button data-testid="button">Action</button>
+      <div data-testid="ignore" data-sfv-ignore-gesture />
+    </div>
+  )
 }
 
 function mockRect(el: HTMLElement) {
@@ -51,5 +57,59 @@ describe('usePointerGestures', () => {
     fireEvent.pointerDown(c, { clientX: 20, clientY: 300, pointerId: 1 })
     fireEvent.pointerUp(c, { clientX: 20, clientY: 300, pointerId: 1 })
     expect(onTapZone).toHaveBeenCalledWith({ side: 'left', index: 0 })
+  })
+
+  it('does not start a drag from native interactive elements by default', () => {
+    const beginDrag = vi.fn(), dragBy = vi.fn(), endDrag = vi.fn()
+    const { getByTestId } = render(
+      <Harness beginDrag={beginDrag} dragBy={dragBy} endDrag={endDrag} />,
+    )
+    const c = getByTestId('c'); mockRect(c)
+    const button = getByTestId('button')
+    fireEvent.pointerDown(button, { clientX: 150, clientY: 400, pointerId: 1 })
+    fireEvent.pointerMove(button, { clientX: 150, clientY: 300, pointerId: 1 })
+    fireEvent.pointerUp(button, { clientX: 150, clientY: 300, pointerId: 1 })
+    expect(beginDrag).not.toHaveBeenCalled()
+    expect(dragBy).not.toHaveBeenCalled()
+    expect(endDrag).not.toHaveBeenCalled()
+  })
+
+  it('allows native interactive elements to start drags when configured', () => {
+    const beginDrag = vi.fn(), dragBy = vi.fn(), endDrag = vi.fn()
+    const { getByTestId } = render(
+      <Harness
+        beginDrag={beginDrag}
+        dragBy={dragBy}
+        endDrag={endDrag}
+        ignoreInteractiveElements={false}
+      />,
+    )
+    const c = getByTestId('c'); mockRect(c)
+    const button = getByTestId('button')
+    fireEvent.pointerDown(button, { clientX: 150, clientY: 400, pointerId: 1 })
+    fireEvent.pointerMove(button, { clientX: 150, clientY: 300, pointerId: 1 })
+    fireEvent.pointerUp(button, { clientX: 150, clientY: 300, pointerId: 1 })
+    expect(beginDrag).toHaveBeenCalledTimes(1)
+    expect(endDrag).toHaveBeenCalledTimes(1)
+  })
+
+  it('always ignores elements marked with data-sfv-ignore-gesture', () => {
+    const beginDrag = vi.fn(), dragBy = vi.fn(), endDrag = vi.fn()
+    const { getByTestId } = render(
+      <Harness
+        beginDrag={beginDrag}
+        dragBy={dragBy}
+        endDrag={endDrag}
+        ignoreInteractiveElements={false}
+      />,
+    )
+    const c = getByTestId('c'); mockRect(c)
+    const ignore = getByTestId('ignore')
+    fireEvent.pointerDown(ignore, { clientX: 150, clientY: 400, pointerId: 1 })
+    fireEvent.pointerMove(ignore, { clientX: 150, clientY: 300, pointerId: 1 })
+    fireEvent.pointerUp(ignore, { clientX: 150, clientY: 300, pointerId: 1 })
+    expect(beginDrag).not.toHaveBeenCalled()
+    expect(dragBy).not.toHaveBeenCalled()
+    expect(endDrag).not.toHaveBeenCalled()
   })
 })

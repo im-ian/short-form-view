@@ -12,17 +12,22 @@ export interface ItemRendererProps<T> {
   renderItem: (item: T, state: ItemState) => ReactNode
   itemClassName?: string
   itemStyle?: CSSProperties
+  getItemAriaLabel?: (index: number, item: T, total: number) => string
   onItemEnter?: (index: number, item: T) => void
   onItemLeave?: (index: number, item: T) => void
 }
 
 function ItemRendererInner<T>(props: ItemRendererProps<T>) {
-  const { item, index, activeIndex, isSnapping, renderItem, itemClassName, itemStyle, onItemEnter, onItemLeave } = props
+  const {
+    item, index, activeIndex, isSnapping, total, renderItem, itemClassName, itemStyle,
+    getItemAriaLabel, onItemEnter, onItemLeave,
+  } = props
 
   const distance = index - activeIndex
   const isActive = distance === 0
   const isVisible = Math.abs(distance) <= 1
   const state: ItemState = { index, activeIndex, isActive, isVisible, isSnapping, distance }
+  const ariaLabel = getItemAriaLabel?.(index, item, total) ?? `Slide ${index + 1} of ${total}`
 
   useItemLifecycle(isActive, index, item, onItemEnter, onItemLeave)
 
@@ -37,7 +42,16 @@ function ItemRendererInner<T>(props: ItemRendererProps<T>) {
   }
 
   return (
-    <div className={itemClassName} style={style} data-sfv-index={index} aria-hidden={!isActive}>
+    <div
+      className={itemClassName}
+      style={style}
+      data-sfv-index={index}
+      role="group"
+      aria-roledescription="slide"
+      aria-label={ariaLabel}
+      aria-current={isActive ? 'true' : undefined}
+      aria-hidden={!isActive}
+    >
       {renderItem(item, state)}
     </div>
   )

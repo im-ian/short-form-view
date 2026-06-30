@@ -63,6 +63,76 @@ describe('ShortFormView', () => {
     expect(getByTestId('slide-slide-2').getAttribute('data-active')).toBe('true')
   })
 
+  it('preserves the active item by key when data is prepended', () => {
+    const ref = createRef<ShortFormHandle>()
+    const onIndexChange = vi.fn()
+    const base = mkData(3)
+    const { rerender, getByTestId } = render(
+      <ShortFormView<Slide>
+        ref={ref}
+        data={base}
+        keyExtractor={(s) => s.id}
+        renderItem={renderItem}
+        preserveActiveItemOnDataChange
+        onIndexChange={onIndexChange}
+      />,
+    )
+
+    act(() => ref.current!.scrollToIndex(1, { animated: false }))
+    expect(getByTestId('slide-slide-1').getAttribute('data-active')).toBe('true')
+    onIndexChange.mockClear()
+
+    rerender(
+      <ShortFormView<Slide>
+        ref={ref}
+        data={[{ id: 's-new', label: 'slide-new' }, ...base]}
+        keyExtractor={(s) => s.id}
+        renderItem={renderItem}
+        preserveActiveItemOnDataChange
+        onIndexChange={onIndexChange}
+      />,
+    )
+
+    expect(ref.current!.getIndex()).toBe(2)
+    expect(getByTestId('slide-slide-1').getAttribute('data-active')).toBe('true')
+    expect(onIndexChange).toHaveBeenCalledWith(2, { reason: 'data' })
+  })
+
+  it('adds slide accessibility metadata to item wrappers', () => {
+    const { getByTestId } = renderView({
+      getItemAriaLabel: (index, item, total) => `${item.label} (${index + 1}/${total})`,
+    })
+    const activeWrapper = getByTestId('slide-slide-0').parentElement
+    const inactiveWrapper = getByTestId('slide-slide-1').parentElement
+
+    expect(activeWrapper).toHaveAttribute('role', 'group')
+    expect(activeWrapper).toHaveAttribute('aria-roledescription', 'slide')
+    expect(activeWrapper).toHaveAttribute('aria-label', 'slide-0 (1/5)')
+    expect(activeWrapper).toHaveAttribute('aria-current', 'true')
+    expect(activeWrapper).toHaveAttribute('aria-hidden', 'false')
+    expect(inactiveWrapper).not.toHaveAttribute('aria-current')
+    expect(inactiveWrapper).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  it('fires prefetch hints for nearby unseen items', () => {
+    const onPrefetch = vi.fn()
+    const ref = createRef<ShortFormHandle>()
+    renderView({ onPrefetch }, ref)
+
+    expect(onPrefetch).toHaveBeenCalledTimes(1)
+    expect(onPrefetch).toHaveBeenCalledWith(
+      expect.objectContaining({ index: 1, activeIndex: 0, distance: 1 }),
+    )
+
+    onPrefetch.mockClear()
+    act(() => ref.current!.next())
+
+    expect(onPrefetch).toHaveBeenCalledTimes(1)
+    expect(onPrefetch).toHaveBeenCalledWith(
+      expect.objectContaining({ index: 2, activeIndex: 1, distance: 1 }),
+    )
+  })
+
   it('fires onEndReached as it nears the end', () => {
     const onEndReached = vi.fn()
     const ref = createRef<ShortFormHandle>()
@@ -82,11 +152,12 @@ describe('ShortFormView', () => {
   })
 
   it('disables text selection and prevents native drag on the container', () => {
-    const { getByRole } = renderView()
-    const container = getByRole('group')
+    const { container: root } = renderView()
+    const container = root.querySelector('[aria-roledescription="carousel"]')
+    expect(container).not.toBeNull()
     expect(container).toHaveStyle({ userSelect: 'none' })
-    const dragEvent = createEvent.dragStart(container)
-    fireEvent(container, dragEvent)
+    const dragEvent = createEvent.dragStart(container as Element)
+    fireEvent(container as Element, dragEvent)
     expect(dragEvent.defaultPrevented).toBe(true)
   })
 })

@@ -5,6 +5,7 @@ export type {
   ItemState,
   SwipeEvent,
   ZoneEvent,
+  PrefetchEvent,
   IndexChangeMeta,
   SwipeDirection,
   ZoneSide,

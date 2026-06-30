@@ -15,7 +15,7 @@ A smooth, virtualized, SSR-safe vertical feed — render any view per slot.
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
 ![dependencies](https://img.shields.io/badge/runtime_deps-0-22c55e)
 ![coverage](https://img.shields.io/badge/coverage-95%25-22c55e)
-![tests](https://img.shields.io/badge/tests-41_unit_·_12_e2e-22c55e)
+![tests](https://img.shields.io/badge/tests-63_unit_·_12_e2e-22c55e)
 ![license](https://img.shields.io/badge/license-MIT-black)
 
 </div>
@@ -26,10 +26,10 @@ A smooth, virtualized, SSR-safe vertical feed — render any view per slot.
 
 - **Gesture-driven** — configurable swipe threshold, velocity flick, edge resistance. Touch, mouse, wheel, and keyboard all drive one engine.
 - **Virtualized** — only the active item ± overscan are mounted.
-- **Append-safe** — growing `data` from an API mid-scroll never reflows or remounts existing items.
+- **Data-change safe** — appending never reflows existing items; opt in to key-based active item preservation for prepends/reorders.
 - **Zero runtime dependency** — no animation library, no CSS import.
 - **SSR-safe** — works in Next.js (App Router and Pages).
-- **Rich callbacks** — swipe, item enter/leave lifecycle, and left/center/right press-hold + tap zones.
+- **Rich callbacks** — swipe, item enter/leave lifecycle, prefetch hints, and left/center/right press-hold + tap zones.
 - **No re-render on drag** — the track transform is written imperatively via `requestAnimationFrame`.
 
 ## Install
@@ -82,9 +82,9 @@ export default function Feed() {
 
 | | |
 |---|---|
-| **Navigation** | drag · wheel/trackpad · keyboard (arrows, page, home/end) · controlled & uncontrolled `index` · imperative `ref` (`scrollToIndex` / `next` / `prev`) |
-| **Tuning** | `threshold` (fraction or px) · `velocityThreshold` · `resistance` · `loop` · `transitionDuration` · `easing` · `overscan` |
-| **Callbacks** | `onSwiped` · `onIndexChange` · `onItemEnter` / `onItemLeave` · `onEndReached` · `onHoldStart` / `onHoldEnd` / `onTapZone` |
+| **Navigation** | drag · wheel/trackpad · keyboard (arrows, page, home/end) · controlled & uncontrolled `index` · imperative `ref` (`scrollToIndex` / `next` / `prev`) · optional key-preserved data changes |
+| **Tuning** | `threshold` (fraction or px) · `velocityThreshold` · `resistance` · `loop` · `transitionDuration` · `easing` · `overscan` · `ignoreInteractiveElements` |
+| **Callbacks** | `onSwiped` · `onIndexChange` · `onItemEnter` / `onItemLeave` · `onPrefetch` · `onEndReached` · `onHoldStart` / `onHoldEnd` / `onTapZone` |
 | **Per-item state** | `isActive` · `isVisible` · `isSnapping` · `distance` · `index` / `activeIndex` |
 
 **Full props, types, and the imperative handle:** see the [package README](packages/short-form-view/README.md).
@@ -92,6 +92,8 @@ export default function Feed() {
 ## Press-and-hold vs. swipe
 
 The active slot is overlaid with left / center / right zones. A stationary press past `holdDelay` fires `onHoldStart` (pause the video, dim the UI); a quick press-release fires `onTapZone`. Any vertical movement past a small slop becomes a swipe instead — so holding and swiping never fight.
+
+Interactive descendants are protected by default: buttons, links, form controls, editable content, and elements marked with `data-sfv-ignore-gesture` do not start feed gestures.
 
 ## Repository
 

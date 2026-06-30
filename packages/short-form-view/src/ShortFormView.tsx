@@ -9,28 +9,33 @@ import { useWheelNav } from './engine/gestures/useWheelNav'
 import { useKeyboardNav } from './engine/gestures/useKeyboardNav'
 import { useWindowedRange } from './virtualization/useWindowedRange'
 import { ItemRenderer } from './item/ItemRenderer'
+import { usePrefetch } from './item/usePrefetch'
 import { usePrefersReducedMotion } from './ssr/usePrefersReducedMotion'
+import { useIsomorphicLayoutEffect } from './ssr/useIsomorphicLayoutEffect'
+import { clampIndex } from './engine/math'
 
 function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<ShortFormHandle>) {
   const {
     data, renderItem, keyExtractor,
     initialIndex = 0,
     index: controlledIndex,
-    onIndexChange, onSwiped,
+    onIndexChange, onSwiped, preserveActiveItemOnDataChange = false,
     threshold = 0.2, thresholdUnit = 'fraction',
     velocityThreshold = 0.3, resistance = 0.3,
-    loop = false, disabled = false,
+    loop = false, disabled = false, ignoreInteractiveElements = true,
     transitionDuration = 300, easing = 'cubic-bezier(.16,1,.3,1)',
-    overscan = 1, onEndReached, onEndReachedThreshold = 2,
+    overscan = 1, prefetchRange = 1, onPrefetch, onEndReached, onEndReachedThreshold = 2,
     onItemEnter, onItemLeave,
     onHoldStart, onHoldEnd, onTapZone,
     holdDelay = 250, zones = { left: 0.33, right: 0.33 },
-    className, style, itemClassName, itemStyle, ariaLabel,
+    className, style, itemClassName, itemStyle, ariaLabel, getItemAriaLabel,
   } = props
 
   const total = data.length
   const containerRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
+  const activeKeyRef = useRef<string | number | null>(null)
+  const previousDataRef = useRef(data)
   const reducedMotion = usePrefersReducedMotion()
 
   const engine = useSwipeEngine({
@@ -48,7 +53,53 @@ function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<S
     if (controlledIndex !== engine.activeIndex) {
       engine.goTo(controlledIndex, { reason: 'api', animated: false })
     }
-  }, [controlledIndex, engine])
+  }, [controlledIndex, engine.activeIndex, engine.goTo])
+
+  useIsomorphicLayoutEffect(() => {
+    const dataChanged = previousDataRef.current !== data
+    previousDataRef.current = data
+
+    if (total <= 0) {
+      activeKeyRef.current = null
+      return
+    }
+
+    if (controlledIndex != null && controlledIndex !== engine.activeIndex) {
+      const controlled = clampIndex(controlledIndex, total)
+      activeKeyRef.current = keyExtractor(data[controlled] as T, controlled)
+      return
+    }
+
+    const clampedActive = clampIndex(engine.activeIndex, total)
+    let targetIndex: number | null = null
+    const activeKey = activeKeyRef.current
+
+    if (dataChanged) {
+      if (preserveActiveItemOnDataChange && activeKey != null) {
+        const preservedIndex = data.findIndex((item, i) => keyExtractor(item, i) === activeKey)
+        if (preservedIndex >= 0) targetIndex = preservedIndex
+      }
+      if (targetIndex == null && clampedActive !== engine.activeIndex) {
+        targetIndex = clampedActive
+      }
+    }
+
+    if (targetIndex != null && targetIndex !== engine.activeIndex) {
+      activeKeyRef.current = keyExtractor(data[targetIndex] as T, targetIndex)
+      engine.goTo(targetIndex, { reason: 'data', animated: false })
+      return
+    }
+
+    activeKeyRef.current = keyExtractor(data[clampedActive] as T, clampedActive)
+  }, [
+    controlledIndex,
+    data,
+    engine.activeIndex,
+    engine.goTo,
+    keyExtractor,
+    preserveActiveItemOnDataChange,
+    total,
+  ])
 
   useImperativeHandle(ref, () => ({
     scrollToIndex: (i, opts) => engine.goTo(i, { reason: 'api', animated: opts?.animated ?? true }),
@@ -60,11 +111,19 @@ function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<S
   usePointerGestures({
     containerRef, engine,
     getIndex: () => engine.activeIndex,
-    zones, holdDelay, disabled,
+    zones, holdDelay, disabled, ignoreInteractiveElements,
     onHoldStart, onHoldEnd, onTapZone,
   })
   useWheelNav({ containerRef, engine, disabled })
   useKeyboardNav({ containerRef, engine, total, disabled })
+  usePrefetch({
+    data,
+    activeIndex: engine.activeIndex,
+    loop,
+    range: prefetchRange,
+    keyExtractor,
+    onPrefetch,
+  })
 
   const windowIndices = useWindowedRange(engine.activeIndex, total, overscan, loop)
 
@@ -119,6 +178,7 @@ function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<S
               renderItem={renderItem}
               itemClassName={itemClassName}
               itemStyle={itemStyle}
+              getItemAriaLabel={getItemAriaLabel}
               onItemEnter={onItemEnter}
               onItemLeave={onItemLeave}
             />

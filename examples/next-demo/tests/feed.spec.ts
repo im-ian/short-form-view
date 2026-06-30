@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 
 async function swipeUp(page: Page) {
-  const box = await page.locator('[role="group"]').boundingBox()
+  const box = await page.locator('[aria-roledescription="carousel"]').boundingBox()
   if (!box) throw new Error('container not found')
   const cx = box.x + box.width / 2
   const startY = box.y + box.height * 0.8
@@ -27,7 +27,7 @@ test('swiping up advances the index', async ({ page }) => {
 
 test('keyboard ArrowDown advances the index', async ({ page }) => {
   await page.goto('/')
-  await page.locator('[role="group"]').focus()
+  await page.locator('[aria-roledescription="carousel"]').focus()
   await page.keyboard.press('ArrowDown')
   await page.waitForTimeout(400)
   await expect(page.getByTestId('hud')).toContainText('index:1')
