@@ -38,7 +38,7 @@ describe('usePointerGestures', () => {
     expect(beginDrag).toHaveBeenCalledTimes(1)
     expect(dragBy).toHaveBeenCalled()
     expect(endDrag).toHaveBeenCalledTimes(1)
-    const [delta] = endDrag.mock.calls[0]
+    const delta = endDrag.mock.calls[0]?.[0]
     expect(delta).toBe(-100) // 300 - 400
   })
 
