@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { SponsoredVideoItem } from './feed'
-import { StarIcon } from './icons'
+import { Star } from 'lucide-react'
 
 const stop = { onPointerDown: (e: React.PointerEvent) => e.stopPropagation() }
 
@@ -47,7 +47,7 @@ export function VideoAdBanner({ item, active }: { item: SponsoredVideoItem; acti
           </div>
           <div style={ratingRow}>
             {[0, 1, 2, 3, 4].map((i) => (
-              <StarIcon key={i} on={i < full} />
+              <Star key={i} size={14} fill={i < full ? '#ffce3a' : 'none'} color={i < full ? '#ffce3a' : 'rgba(255,255,255,.35)'} />
             ))}
             <span style={{ fontSize: 12, color: 'rgba(255,255,255,.7)', marginLeft: 4 }}>
               {item.rating.toFixed(1)} · {item.ratingCount}

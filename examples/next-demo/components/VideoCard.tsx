@@ -3,9 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { VideoItem } from './feed'
 import { formatCount } from './feed'
-import {
-  BookmarkIcon, CommentIcon, HeartIcon, MusicIcon, MuteIcon, PlayIcon, PlusIcon, ShareIcon,
-} from './icons'
+import { Bookmark, Heart, MessageCircle, Music, Play, Plus, Send, Volume2, VolumeX } from 'lucide-react'
 
 const stop = { onPointerDown: (e: React.PointerEvent) => e.stopPropagation() }
 
@@ -60,7 +58,7 @@ export function VideoCard({ item, active }: { item: VideoItem; active: boolean }
       {/* paused overlay */}
       {paused && active && (
         <div style={pausedOverlay}>
-          <div style={{ opacity: 0.85 }}><PlayIcon /></div>
+          <div style={{ opacity: 0.85 }}><Play size={64} fill="#fff" color="#fff" /></div>
         </div>
       )}
 
@@ -69,27 +67,27 @@ export function VideoCard({ item, active }: { item: VideoItem; active: boolean }
 
       {/* mute toggle */}
       <button aria-label={muted ? 'unmute' : 'mute'} {...stop} onClick={() => setMuted((m) => !m)} style={muteBtn}>
-        <MuteIcon muted={muted} />
+        {muted ? <VolumeX size={20} color="#fff" /> : <Volume2 size={20} color="#fff" />}
       </button>
 
       {/* right action rail */}
       <div style={rail} {...stop}>
         <div style={{ position: 'relative', marginBottom: 22 }}>
           <img src={item.avatar} alt="" width={48} height={48} style={avatarImg} />
-          <span style={followBadge}><PlusIcon /></span>
+          <span style={followBadge}><Plus size={14} color="#fff" strokeWidth={3} /></span>
         </div>
 
         <RailButton label={formatCount(likes)} onClick={() => setLiked((v) => !v)}>
-          <HeartIcon filled={liked} />
+          <Heart size={33} strokeWidth={2} fill={liked ? '#ff2d55' : 'none'} color={liked ? '#ff2d55' : '#fff'} />
         </RailButton>
         <RailButton label={formatCount(item.comments)}>
-          <CommentIcon />
+          <MessageCircle size={32} strokeWidth={2} color="#fff" />
         </RailButton>
         <RailButton label={formatCount(item.saves)} onClick={() => setSaved((v) => !v)}>
-          <BookmarkIcon filled={saved} />
+          <Bookmark size={31} strokeWidth={2} fill={saved ? '#ffd233' : 'none'} color={saved ? '#ffd233' : '#fff'} />
         </RailButton>
         <RailButton label={formatCount(item.shares)}>
-          <ShareIcon />
+          <Send size={30} strokeWidth={2} color="#fff" />
         </RailButton>
 
         <div style={disc} className="sfv-spin">
@@ -102,7 +100,7 @@ export function VideoCard({ item, active }: { item: VideoItem; active: boolean }
         <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 7 }}>@{item.username}</div>
         <div style={{ fontSize: 14, lineHeight: 1.35, marginBottom: 9, maxWidth: 300 }}>{item.caption}</div>
         <div style={musicRow}>
-          <MusicIcon />
+          <Music size={15} color="#fff" style={{ flexShrink: 0 }} />
           <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: 220 }}>
             <span className="sfv-marquee" style={{ display: 'inline-block' }}>
               {item.music} · {item.music} ·

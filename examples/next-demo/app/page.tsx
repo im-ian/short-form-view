@@ -6,7 +6,8 @@ import { makeFeed, type FeedItem } from '../components/feed'
 import { VideoCard } from '../components/VideoCard'
 import { AdGrid } from '../components/AdGrid'
 import { VideoAdBanner } from '../components/VideoAdBanner'
-import { CreateTab, HomeIcon, InboxIcon, SearchIcon } from '../components/icons'
+import { Home, MessageSquare, Search } from 'lucide-react'
+import { CreateTab } from '../components/icons'
 
 export default function Page() {
   const [items, setItems] = useState<FeedItem[]>(() => makeFeed(0, 8))
@@ -69,7 +70,7 @@ function TopTabs() {
           <span style={tabUnderline} />
         </span>
       </div>
-      <span style={{ color: '#fff', opacity: 0.9 }}><SearchIcon /></span>
+      <span style={{ color: '#fff', opacity: 0.9, display: 'grid', placeItems: 'center' }}><Search size={22} /></span>
     </div>
   )
 }
@@ -77,10 +78,10 @@ function TopTabs() {
 function BottomNav() {
   return (
     <div style={bottomBar}>
-      <NavItem active><HomeIcon /><span style={navLabel}>Home</span></NavItem>
-      <NavItem><SearchIcon /><span style={navLabel}>Discover</span></NavItem>
+      <NavItem active><Home size={24} /><span style={navLabel}>Home</span></NavItem>
+      <NavItem><Search size={24} /><span style={navLabel}>Discover</span></NavItem>
       <span style={{ display: 'grid', placeItems: 'center' }}><CreateTab /></span>
-      <NavItem><InboxIcon /><span style={navLabel}>Inbox</span></NavItem>
+      <NavItem><MessageSquare size={24} /><span style={navLabel}>Inbox</span></NavItem>
       <NavItem>
         <span style={profileDot} />
         <span style={navLabel}>Profile</span>
