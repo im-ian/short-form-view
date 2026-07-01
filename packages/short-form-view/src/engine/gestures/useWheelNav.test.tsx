@@ -3,9 +3,9 @@ import { render } from '@testing-library/react'
 import { useRef } from 'react'
 import { useWheelNav } from './useWheelNav'
 
-function Harness({ next, prev }: { next: () => void; prev: () => void }) {
+function Harness({ next, prev, disabled = false }: { next: () => void; prev: () => void; disabled?: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
-  useWheelNav({ containerRef: ref, engine: { next, prev }, disabled: false })
+  useWheelNav({ containerRef: ref, engine: { next, prev }, disabled })
   return <div ref={ref} data-testid="c" />
 }
 
@@ -113,5 +113,14 @@ describe('useWheelNav', () => {
     const { el, prev } = setup()
     wheel(el, -120, 0)
     expect(prev).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not bind wheel navigation when disabled', () => {
+    const next = vi.fn()
+    const prev = vi.fn()
+    const { getByTestId } = render(<Harness next={next} prev={prev} disabled />)
+    wheel(getByTestId('c'), 120, 0)
+    expect(next).not.toHaveBeenCalled()
+    expect(prev).not.toHaveBeenCalled()
   })
 })

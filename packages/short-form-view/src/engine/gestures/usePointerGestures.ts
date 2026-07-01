@@ -46,6 +46,9 @@ export function usePointerGestures(p: {
   zones: { left: number; right: number }
   holdDelay: number
   disabled: boolean
+  swipeEnabled: boolean
+  holdEnabled: boolean
+  tapZonesEnabled: boolean
   ignoreInteractiveElements: boolean
   onHoldStart?: (e: ZoneEvent) => void
   onHoldEnd?: (e: ZoneEvent) => void
@@ -53,24 +56,25 @@ export function usePointerGestures(p: {
 }): void {
   const {
     containerRef, engine, getIndex, zones, holdDelay, disabled,
-    ignoreInteractiveElements, onHoldStart, onHoldEnd, onTapZone,
+    swipeEnabled, holdEnabled, tapZonesEnabled, ignoreInteractiveElements,
+    onHoldStart, onHoldEnd, onTapZone,
   } = p
 
   const state = useRef({
     active: false, pointerId: -1,
     startX: 0, startY: 0, lastY: 0, lastT: 0,
-    velocity: 0, moved: false, holdFired: false, side: 'center' as ZoneEvent['side'],
+    velocity: 0, moved: false, dragging: false, holdFired: false, side: 'center' as ZoneEvent['side'],
     holdTimer: null as ReturnType<typeof setTimeout> | null,
   })
 
   // Keep the latest callbacks/config in a ref so listeners bind once.
   const ext = useRef({
-    engine, getIndex, zones, holdDelay, ignoreInteractiveElements,
-    onHoldStart, onHoldEnd, onTapZone, disabled,
+    engine, getIndex, zones, holdDelay, swipeEnabled, holdEnabled, tapZonesEnabled,
+    ignoreInteractiveElements, onHoldStart, onHoldEnd, onTapZone, disabled,
   })
   ext.current = {
-    engine, getIndex, zones, holdDelay, ignoreInteractiveElements,
-    onHoldStart, onHoldEnd, onTapZone, disabled,
+    engine, getIndex, zones, holdDelay, swipeEnabled, holdEnabled, tapZonesEnabled,
+    ignoreInteractiveElements, onHoldStart, onHoldEnd, onTapZone, disabled,
   }
 
   useEffect(() => {
@@ -87,22 +91,30 @@ export function usePointerGestures(p: {
     const onPointerDown = (e: PointerEvent) => {
       const cfg = ext.current
       if (cfg.disabled) return
+      if (!cfg.swipeEnabled && !cfg.holdEnabled && !cfg.tapZonesEnabled) return
+      const s = state.current
+      // Single-pointer pager: ignore extra fingers while one gesture is active,
+      // so a second touch never resets the first pointer's hold/tap state.
+      if (s.active) return
       if (shouldIgnoreGestureTarget(e.target, el, cfg.ignoreInteractiveElements)) return
       const rect = el.getBoundingClientRect()
-      const s = state.current
       s.active = true; s.pointerId = e.pointerId
       s.startX = e.clientX; s.startY = e.clientY
       s.lastY = e.clientY; s.lastT = performance.now()
-      s.velocity = 0; s.moved = false; s.holdFired = false
+      s.velocity = 0; s.moved = false; s.dragging = false; s.holdFired = false
       s.side = zoneFromX(e.clientX - rect.left, rect.width, cfg.zones)
       try { el.setPointerCapture(e.pointerId) } catch { /* noop */ }
       clearHold()
-      s.holdTimer = setTimeout(() => {
-        if (!s.moved) {
-          s.holdFired = true
-          cfg.onHoldStart?.({ side: s.side, index: cfg.getIndex() })
-        }
-      }, cfg.holdDelay)
+      if (cfg.holdEnabled) {
+        s.holdTimer = setTimeout(() => {
+          // Re-read config: hold may have been disabled during the press.
+          const c = ext.current
+          if (!s.moved && c.holdEnabled && !c.disabled) {
+            s.holdFired = true
+            c.onHoldStart?.({ side: s.side, index: c.getIndex() })
+          }
+        }, cfg.holdDelay)
+      }
     }
 
     const onPointerMove = (e: PointerEvent) => {
@@ -115,9 +127,12 @@ export function usePointerGestures(p: {
         s.moved = true
         clearHold()
         if (s.holdFired) { cfg.onHoldEnd?.({ side: s.side, index: cfg.getIndex() }); s.holdFired = false }
-        cfg.engine.beginDrag()
+        if (cfg.swipeEnabled) {
+          s.dragging = true
+          cfg.engine.beginDrag()
+        }
       }
-      if (s.moved) {
+      if (s.dragging) {
         const now = performance.now()
         const dt = now - s.lastT
         if (dt > 0) s.velocity = (e.clientY - s.lastY) / dt
@@ -135,13 +150,18 @@ export function usePointerGestures(p: {
       clearHold()
       try { el.releasePointerCapture(e.pointerId) } catch { /* noop */ }
       const dy = e.clientY - s.startY
-      if (s.moved) {
+      if (s.dragging) {
         cfg.engine.endDrag(dy, s.velocity)
+        return
+      }
+      if (s.moved) return
+      if (e.type === 'pointercancel') {
+        if (s.holdFired) cfg.onHoldEnd?.({ side: s.side, index: cfg.getIndex() })
         return
       }
       const kind = classifyPointerEnd(s.holdFired, false)
       if (kind === 'hold-end') cfg.onHoldEnd?.({ side: s.side, index: cfg.getIndex() })
-      else if (kind === 'tap') cfg.onTapZone?.({ side: s.side, index: cfg.getIndex() })
+      else if (kind === 'tap' && cfg.tapZonesEnabled) cfg.onTapZone?.({ side: s.side, index: cfg.getIndex() })
     }
 
     el.addEventListener('pointerdown', onPointerDown)

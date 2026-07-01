@@ -12,6 +12,9 @@ function Harness(props: any) {
     zones: { left: 0.33, right: 0.33 },
     holdDelay: 250,
     disabled: false,
+    swipeEnabled: props.swipeEnabled ?? true,
+    holdEnabled: props.holdEnabled ?? true,
+    tapZonesEnabled: props.tapZonesEnabled ?? true,
     ignoreInteractiveElements: props.ignoreInteractiveElements ?? true,
     onHoldStart: props.onHoldStart,
     onHoldEnd: props.onHoldEnd,
@@ -111,5 +114,104 @@ describe('usePointerGestures', () => {
     expect(beginDrag).not.toHaveBeenCalled()
     expect(dragBy).not.toHaveBeenCalled()
     expect(endDrag).not.toHaveBeenCalled()
+  })
+
+  it('can disable swipe drags while keeping tap zones active', () => {
+    const beginDrag = vi.fn(), dragBy = vi.fn(), endDrag = vi.fn(), onTapZone = vi.fn()
+    const { getByTestId } = render(
+      <Harness
+        beginDrag={beginDrag}
+        dragBy={dragBy}
+        endDrag={endDrag}
+        onTapZone={onTapZone}
+        swipeEnabled={false}
+      />,
+    )
+    const c = getByTestId('c'); mockRect(c)
+
+    fireEvent.pointerDown(c, { clientX: 150, clientY: 400, pointerId: 1 })
+    fireEvent.pointerMove(c, { clientX: 150, clientY: 300, pointerId: 1 })
+    fireEvent.pointerUp(c, { clientX: 150, clientY: 300, pointerId: 1 })
+
+    expect(beginDrag).not.toHaveBeenCalled()
+    expect(dragBy).not.toHaveBeenCalled()
+    expect(endDrag).not.toHaveBeenCalled()
+
+    fireEvent.pointerDown(c, { clientX: 280, clientY: 300, pointerId: 2 })
+    fireEvent.pointerUp(c, { clientX: 280, clientY: 300, pointerId: 2 })
+
+    expect(onTapZone).toHaveBeenCalledWith({ side: 'right', index: 0 })
+  })
+
+  it('can disable hold and tap callbacks independently', () => {
+    vi.useFakeTimers()
+    try {
+      const onHoldStart = vi.fn(), onTapZone = vi.fn()
+      const { getByTestId } = render(
+        <Harness
+          beginDrag={vi.fn()}
+          dragBy={vi.fn()}
+          endDrag={vi.fn()}
+          onHoldStart={onHoldStart}
+          onTapZone={onTapZone}
+          holdEnabled={false}
+          tapZonesEnabled={false}
+        />,
+      )
+      const c = getByTestId('c'); mockRect(c)
+
+      fireEvent.pointerDown(c, { clientX: 150, clientY: 300, pointerId: 1 })
+      vi.advanceTimersByTime(300)
+      fireEvent.pointerUp(c, { clientX: 150, clientY: 300, pointerId: 1 })
+
+      expect(onHoldStart).not.toHaveBeenCalled()
+      expect(onTapZone).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not fire a hold that was disabled mid-press', () => {
+    vi.useFakeTimers()
+    try {
+      const onHoldStart = vi.fn()
+      const { getByTestId, rerender } = render(
+        <Harness beginDrag={vi.fn()} dragBy={vi.fn()} endDrag={vi.fn()} onHoldStart={onHoldStart} holdEnabled />,
+      )
+      const c = getByTestId('c'); mockRect(c)
+
+      fireEvent.pointerDown(c, { clientX: 150, clientY: 300, pointerId: 1 })
+      rerender(
+        <Harness beginDrag={vi.fn()} dragBy={vi.fn()} endDrag={vi.fn()} onHoldStart={onHoldStart} holdEnabled={false} />,
+      )
+      vi.advanceTimersByTime(300)
+
+      expect(onHoldStart).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('ignores a second pointer while the first is still active', () => {
+    vi.useFakeTimers()
+    try {
+      const onHoldStart = vi.fn(), onHoldEnd = vi.fn()
+      const { getByTestId } = render(
+        <Harness beginDrag={vi.fn()} dragBy={vi.fn()} endDrag={vi.fn()} onHoldStart={onHoldStart} onHoldEnd={onHoldEnd} />,
+      )
+      const c = getByTestId('c'); mockRect(c)
+
+      fireEvent.pointerDown(c, { clientX: 150, clientY: 300, pointerId: 1 })
+      vi.advanceTimersByTime(300)
+      expect(onHoldStart).toHaveBeenCalledTimes(1)
+
+      // A second finger must not reset the first pointer's hold state.
+      fireEvent.pointerDown(c, { clientX: 150, clientY: 300, pointerId: 2 })
+      fireEvent.pointerUp(c, { clientX: 150, clientY: 300, pointerId: 1 })
+
+      expect(onHoldEnd).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { SwipeEngineApi } from '../useSwipeEngine'
 
 export function useKeyboardNav(p: {
@@ -8,10 +8,15 @@ export function useKeyboardNav(p: {
   disabled: boolean
 }): void {
   const { containerRef, engine, total, disabled } = p
+  // Bind once; read the latest engine/total from a ref so the keydown listener
+  // never churns on unrelated re-renders (engine is a fresh object each render).
+  const ref = useRef({ engine, total })
+  ref.current = { engine, total }
   useEffect(() => {
     const el = containerRef.current
     if (!el || disabled) return
     const onKeyDown = (e: KeyboardEvent) => {
+      const { engine, total } = ref.current
       switch (e.key) {
         case 'ArrowDown':
         case 'PageDown':
@@ -29,5 +34,5 @@ export function useKeyboardNav(p: {
     }
     el.addEventListener('keydown', onKeyDown)
     return () => el.removeEventListener('keydown', onKeyDown)
-  }, [containerRef, engine, total, disabled])
+  }, [containerRef, disabled])
 }

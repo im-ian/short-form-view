@@ -27,6 +27,26 @@ function renderView(extra: Partial<ShortFormViewProps<Slide>> = {}, ref?: React.
   )
 }
 
+function getCarousel(root: HTMLElement): HTMLElement {
+  const carousel = root.querySelector('[aria-roledescription="carousel"]')
+  if (!(carousel instanceof HTMLElement)) throw new Error('carousel not found')
+  return carousel
+}
+
+function mockCarouselRect(el: HTMLElement) {
+  el.getBoundingClientRect = () =>
+    ({ left: 0, top: 0, width: 320, height: 640, right: 320, bottom: 640, x: 0, y: 0, toJSON() {} } as DOMRect)
+  Object.defineProperty(el, 'clientHeight', { value: 640, configurable: true })
+}
+
+function wheel(el: Element, dy: number, t: number) {
+  const ev = createEvent.wheel(el, { bubbles: true, cancelable: true })
+  Object.defineProperty(ev, 'deltaY', { value: dy, configurable: true })
+  Object.defineProperty(ev, 'deltaMode', { value: 0, configurable: true })
+  Object.defineProperty(ev, 'timeStamp', { value: t, configurable: true })
+  fireEvent(el, ev)
+}
+
 describe('ShortFormView', () => {
   it('renders only the windowed items (active + overscan)', () => {
     const { queryByTestId } = renderView()
@@ -153,11 +173,54 @@ describe('ShortFormView', () => {
 
   it('disables text selection and prevents native drag on the container', () => {
     const { container: root } = renderView()
-    const container = root.querySelector('[aria-roledescription="carousel"]')
-    expect(container).not.toBeNull()
+    const container = getCarousel(root)
     expect(container).toHaveStyle({ userSelect: 'none' })
-    const dragEvent = createEvent.dragStart(container as Element)
-    fireEvent(container as Element, dragEvent)
+    const dragEvent = createEvent.dragStart(container)
+    fireEvent(container, dragEvent)
     expect(dragEvent.defaultPrevented).toBe(true)
+  })
+
+  it('can disable swipe navigation while leaving api navigation available', () => {
+    const ref = createRef<ShortFormHandle>()
+    const { container: root, getByTestId } = renderView({ swipeEnabled: false }, ref)
+    const carousel = getCarousel(root)
+    mockCarouselRect(carousel)
+
+    fireEvent.pointerDown(carousel, { clientX: 160, clientY: 500, pointerId: 1 })
+    fireEvent.pointerMove(carousel, { clientX: 160, clientY: 120, pointerId: 1 })
+    fireEvent.pointerUp(carousel, { clientX: 160, clientY: 120, pointerId: 1 })
+    expect(getByTestId('slide-slide-0').getAttribute('data-active')).toBe('true')
+
+    act(() => ref.current!.next())
+    expect(getByTestId('slide-slide-1').getAttribute('data-active')).toBe('true')
+  })
+
+  it('can disable wheel navigation', () => {
+    const { container: root, getByTestId } = renderView({ wheelEnabled: false })
+    const carousel = getCarousel(root)
+    wheel(carousel, 120, 0)
+    expect(getByTestId('slide-slide-0').getAttribute('data-active')).toBe('true')
+  })
+
+  it('can disable keyboard navigation and remove the focus target', () => {
+    const { container: root, getByTestId } = renderView({ keyboardEnabled: false })
+    const carousel = getCarousel(root)
+    fireEvent.keyDown(carousel, { key: 'ArrowDown' })
+    expect(getByTestId('slide-slide-0').getAttribute('data-active')).toBe('true')
+    expect(carousel.tabIndex).toBe(-1)
+  })
+
+  it('keeps touch-action none when swipe is off but hold/tap remain active', () => {
+    const { container: root } = renderView({ swipeEnabled: false })
+    expect(getCarousel(root).style.touchAction).toBe('none')
+  })
+
+  it('releases touch-action to the browser only when every pointer gesture is off', () => {
+    const { container: root } = renderView({
+      swipeEnabled: false,
+      holdEnabled: false,
+      tapZonesEnabled: false,
+    })
+    expect(getCarousel(root).style.touchAction).toBe('auto')
   })
 })

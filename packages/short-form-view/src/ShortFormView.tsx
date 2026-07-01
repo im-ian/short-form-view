@@ -22,7 +22,9 @@ function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<S
     onIndexChange, onSwiped, preserveActiveItemOnDataChange = false,
     threshold = 0.2, thresholdUnit = 'fraction',
     velocityThreshold = 0.3, resistance = 0.3,
-    loop = false, disabled = false, ignoreInteractiveElements = true,
+    loop = false, disabled = false,
+    swipeEnabled = true, wheelEnabled = true, keyboardEnabled = true,
+    ignoreInteractiveElements = true, holdEnabled = true, tapZonesEnabled = true,
     transitionDuration = 300, easing = 'cubic-bezier(.16,1,.3,1)',
     overscan = 1, prefetchRange = 1, onPrefetch, onEndReached, onEndReachedThreshold = 2,
     onItemEnter, onItemLeave,
@@ -111,11 +113,12 @@ function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<S
   usePointerGestures({
     containerRef, engine,
     getIndex: () => engine.activeIndex,
-    zones, holdDelay, disabled, ignoreInteractiveElements,
+    zones, holdDelay, disabled,
+    swipeEnabled, holdEnabled, tapZonesEnabled, ignoreInteractiveElements,
     onHoldStart, onHoldEnd, onTapZone,
   })
-  useWheelNav({ containerRef, engine, disabled })
-  useKeyboardNav({ containerRef, engine, total, disabled })
+  useWheelNav({ containerRef, engine, disabled: disabled || !wheelEnabled })
+  useKeyboardNav({ containerRef, engine, total, disabled: disabled || !keyboardEnabled })
   usePrefetch({
     data,
     activeIndex: engine.activeIndex,
@@ -127,12 +130,16 @@ function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<S
 
   const windowIndices = useWindowedRange(engine.activeIndex, total, overscan, loop)
 
+  // Let the browser claim native touch scrolling only when we handle no pointer
+  // gesture at all; with swipe off but hold/tap on, 'none' keeps them reliable.
+  const pointerInert = disabled || (!swipeEnabled && !holdEnabled && !tapZonesEnabled)
+
   const containerStyle: CSSProperties = {
     position: 'relative',
     overflow: 'hidden',
     width: '100%',
     height: '100dvh',
-    touchAction: 'none',
+    touchAction: pointerInert ? 'auto' : 'none',
     overscrollBehavior: 'contain',
     outline: 'none',
     // Dragging a slide should never select text or start an image/link ghost
@@ -158,7 +165,7 @@ function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<S
       ref={containerRef}
       className={className}
       style={containerStyle}
-      tabIndex={disabled ? -1 : 0}
+      tabIndex={disabled || !keyboardEnabled ? -1 : 0}
       role="group"
       aria-roledescription="carousel"
       aria-label={ariaLabel}

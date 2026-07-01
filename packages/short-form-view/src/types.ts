@@ -61,7 +61,12 @@ export interface ShortFormViewProps<T> {
   resistance?: number
   loop?: boolean
   disabled?: boolean
+  swipeEnabled?: boolean
+  wheelEnabled?: boolean
+  keyboardEnabled?: boolean
   ignoreInteractiveElements?: boolean
+  holdEnabled?: boolean
+  tapZonesEnabled?: boolean
 
   transitionDuration?: number
   easing?: string

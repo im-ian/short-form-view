@@ -20,4 +20,7 @@ describe('computeWindowIndices', () => {
   it('wraps neighbors when loop is enabled', () => {
     expect(computeWindowIndices(0, 5, 1, true)).toEqual([0, 1, 4])
   })
+  it('clamps a negative overscan to just the active item', () => {
+    expect(computeWindowIndices(3, 10, -1, false)).toEqual([3])
+  })
 })

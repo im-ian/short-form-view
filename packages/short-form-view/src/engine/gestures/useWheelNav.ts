@@ -26,6 +26,10 @@ export function useWheelNav(p: {
   disabled: boolean
 }): void {
   const { containerRef, engine, disabled } = p
+  // Keep the latest engine in a ref so the wheel listener binds once and never
+  // churns on unrelated re-renders (engine is a fresh object each render).
+  const engineRef = useRef(engine)
+  engineRef.current = engine
   const accum = useRef(0)
   const locked = useRef(false)
   const lockStart = useRef(0)
@@ -63,8 +67,8 @@ export function useWheelNav(p: {
 
       accum.current += dy
       if (Math.abs(accum.current) >= WHEEL_STEP) {
-        if (dir > 0) engine.next('wheel')
-        else engine.prev('wheel')
+        if (dir > 0) engineRef.current.next('wheel')
+        else engineRef.current.prev('wheel')
         locked.current = true
         lockStart.current = now
         gestureDir.current = dir
@@ -74,5 +78,5 @@ export function useWheelNav(p: {
 
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
-  }, [containerRef, engine, disabled])
+  }, [containerRef, disabled])
 }

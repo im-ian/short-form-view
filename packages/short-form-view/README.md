@@ -2,7 +2,7 @@
 
 Instagram / TikTok-style **vertical swipe pager** for React. `renderItem` returns any React node, so each slot can be a video, an image, or any custom component — the library connects them into a smooth, swipeable, full-viewport feed.
 
-- **Gesture-driven** — configurable swipe threshold, velocity flick, edge resistance.
+- **Gesture-driven** — configurable swipe threshold, velocity flick, edge resistance, and per-input controls.
 - **Virtualized** — only the active item ± overscan are mounted.
 - **Append-safe** — growing `data` from an API mid-scroll never reflows or remounts existing items.
 - **Zero-dependency** — no animation library, no CSS import. Just React.
@@ -33,7 +33,7 @@ export default function Feed() {
   }, [])
 
   return (
-    <ShortFormView<Clip>
+    <ShortFormView
       data={clips}
       keyExtractor={(c) => c.id}
       threshold={0.2}
@@ -66,8 +66,13 @@ Each slot receives an `ItemState`. A video reads `state.isActive` to play only w
 | `velocityThreshold` | `number` | `0.3` | px/ms flick speed that commits even below `threshold`. |
 | `resistance` | `number` | `0.3` | Overscroll drag damping at the first/last edge. |
 | `loop` | `boolean` | `false` | Wrap from last to first. |
-| `disabled` | `boolean` | `false` | Disable all gestures. |
-| `ignoreInteractiveElements` | `boolean` | `true` | Do not start feed gestures from buttons, links, form controls, editable content, or common interactive roles. |
+| `disabled` | `boolean` | `false` | Disable all user input navigation and tap/hold gestures. Imperative `ref` navigation still works. |
+| `swipeEnabled` | `boolean` | `true` | Enable touch/mouse drag swipe navigation. `disabled` overrides this. |
+| `wheelEnabled` | `boolean` | `true` | Enable wheel and trackpad navigation. `disabled` overrides this. |
+| `keyboardEnabled` | `boolean` | `true` | Enable keyboard navigation (`ArrowUp`/`ArrowDown`, `PageUp`/`PageDown`, `Home`, `End`). `disabled` overrides this. |
+| `ignoreInteractiveElements` | `boolean` | `true` | Do not start pointer gestures from buttons, links, form controls, editable content, or common interactive roles. |
+| `holdEnabled` | `boolean` | `true` | Enable press-and-hold zone callbacks. `disabled` overrides this. |
+| `tapZonesEnabled` | `boolean` | `true` | Enable tap zone callbacks. `disabled` overrides this. |
 | `transitionDuration` | `number` | `300` | Snap animation duration (ms). |
 | `easing` | `string` | `cubic-bezier(.16,1,.3,1)` | Snap easing. |
 | `overscan` | `number` | `1` | Items mounted on each side of the active one. |
@@ -145,6 +150,37 @@ Use `onPrefetch` to prepare nearby items without mounting more DOM. The callback
 ## Navigation inputs
 
 Touch / mouse drag, mouse wheel / trackpad, and keyboard (`ArrowUp`/`ArrowDown`, `PageUp`/`PageDown`, `Home`, `End`) all drive the same engine. The container is focusable for keyboard use.
+
+Each input channel can be disabled independently:
+
+```tsx
+<ShortFormView
+  data={clips}
+  keyExtractor={(clip) => clip.id}
+  renderItem={renderClip}
+  swipeEnabled={false}     // keep wheel, keyboard, tap, and hold behavior
+  wheelEnabled={false}     // let wheel events pass through instead of paging
+  keyboardEnabled={false}  // remove keyboard paging and the focus target
+/>
+```
+
+`disabled` remains the global switch for all user input. It does not disable controlled `index` updates or the imperative handle.
+
+## Full-screen use & page scroll
+
+The container sets `touch-action: none` and `overscroll-behavior: contain`, so a swipe, wheel, or drag that starts inside the feed drives the pager — it never scrolls or rubber-bands the page behind it.
+
+The feed is `100dvh`. When it is your full-screen surface, also stop the **document** itself from scrolling, so there is no page to scroll underneath:
+
+```css
+html, body {
+  margin: 0;
+  height: 100%;
+  overscroll-behavior: none; /* kill rubber-band at the document edge (iOS) */
+}
+```
+
+This is host-page CSS, not a library import — the component never mutates global styles. Skip it when the feed lives inside a normally-scrolling layout.
 
 ## SSR / Next.js
 

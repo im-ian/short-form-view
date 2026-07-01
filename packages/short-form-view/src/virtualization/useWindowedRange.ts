@@ -7,8 +7,11 @@ export function computeWindowIndices(
   loop: boolean,
 ): number[] {
   if (total <= 0) return []
+  // A negative overscan would make the loop never run and silently render an
+  // empty feed; clamp it so the active item is always included.
+  const span = Math.max(0, overscan)
   const set = new Set<number>()
-  for (let d = -overscan; d <= overscan; d++) {
+  for (let d = -span; d <= span; d++) {
     let i = activeIndex + d
     if (loop) {
       i = ((i % total) + total) % total
