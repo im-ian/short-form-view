@@ -2,9 +2,10 @@ html,
 body {
   margin: 0;
   height: 100%;
-  background: #000;
+  background: #0b0d10;
+  color: #f5f1e8;
   overscroll-behavior: none;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+  font-family: 'Avenir Next', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 }
 
 * {
@@ -12,29 +13,310 @@ body {
   box-sizing: border-box;
 }
 
+button,
+input {
+  font: inherit;
+}
+
 .sfv-stage {
-  position: fixed;
-  inset: 0;
-  display: flex;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(300px, 430px) minmax(340px, 520px);
   align-items: center;
+  align-content: center;
   justify-content: center;
-  background: radial-gradient(circle at 50% 22%, #1b1233, #000 72%);
+  gap: 48px;
+  padding: 32px;
+  overflow: auto;
+  background:
+    linear-gradient(135deg, rgba(254, 44, 85, 0.13), transparent 34%),
+    linear-gradient(315deg, rgba(37, 244, 238, 0.08), transparent 32%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 72px),
+    #0b0d10;
+}
+
+.sfv-phone-shell {
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .sfv-phone {
   position: relative;
-  width: 100vw;
-  height: 100dvh;
+  width: min(100%, 430px);
+  height: min(86dvh, 900px);
+  min-height: 560px;
   overflow: hidden;
   background: #000;
+  border-radius: 38px;
+  box-shadow:
+    0 32px 90px rgba(0, 0, 0, 0.62),
+    0 0 0 10px #0e1015,
+    0 0 0 11px #2a2b31;
 }
 
-@media (min-width: 520px) {
+.sfv-control-panel {
+  width: min(100%, 520px);
+  max-height: min(900px, 92dvh);
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(18, 20, 25, 0.92);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(18px);
+}
+
+.sfv-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sfv-panel-header h1 {
+  margin: 2px 0 0;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.sfv-panel-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  color: #101216;
+  background: #f5f1e8;
+}
+
+.sfv-eyebrow {
+  margin: 0;
+  color: rgba(245, 241, 232, 0.58);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sfv-control-section {
+  padding: 18px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sfv-control-section-last {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.sfv-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sfv-metric {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sfv-metric span,
+.sfv-log-title {
+  display: block;
+  color: rgba(245, 241, 232, 0.56);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sfv-metric strong {
+  display: block;
+  margin-top: 5px;
+  overflow: hidden;
+  color: #fff;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sfv-button-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sfv-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #f5f1e8;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.sfv-action:hover {
+  border-color: rgba(245, 241, 232, 0.38);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sfv-action:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.sfv-action:focus-visible,
+.sfv-slider-row input:focus-visible,
+.sfv-toggle-row input:focus-visible {
+  outline: 2px solid #25f4ee;
+  outline-offset: 3px;
+}
+
+.sfv-action-primary {
+  border-color: rgba(254, 44, 85, 0.55);
+  color: #fff;
+  background: rgba(254, 44, 85, 0.26);
+}
+
+.sfv-action-wide {
+  grid-column: 1 / -1;
+}
+
+.sfv-inline-note {
+  margin: 10px 0 0;
+  color: rgba(245, 241, 232, 0.6);
+  font-size: 12px;
+}
+
+.sfv-slider-row,
+.sfv-toggle-row {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.sfv-toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sfv-toggle-grid .sfv-toggle-row {
+  margin-bottom: 0;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.sfv-slider-row:last-child,
+.sfv-toggle-row:last-child {
+  margin-bottom: 0;
+}
+
+.sfv-slider-row > span,
+.sfv-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(245, 241, 232, 0.78);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sfv-slider-row strong {
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.sfv-slider-row input {
+  width: 100%;
+  accent-color: #25f4ee;
+}
+
+.sfv-toggle-row {
+  min-height: 32px;
+  cursor: pointer;
+}
+
+.sfv-toggle-row > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sfv-toggle-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: #fe2c55;
+}
+
+.sfv-log-block + .sfv-log-block {
+  margin-top: 14px;
+}
+
+.sfv-log-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.sfv-log-list span {
+  min-width: 0;
+  overflow: hidden;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: rgba(245, 241, 232, 0.82);
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 920px) {
+  .sfv-stage {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+    padding: 20px;
+  }
+
+  .sfv-control-panel {
+    max-height: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .sfv-stage {
+    padding: 14px;
+  }
+
   .sfv-phone {
-    width: 430px;
-    height: min(92dvh, 900px);
-    border-radius: 38px;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 0 10px #0d0d12, 0 0 0 11px #26262e;
+    width: calc(100vw - 28px);
+    height: 560px;
+    min-height: 0;
+    border-radius: 28px;
+    box-shadow:
+      0 22px 60px rgba(0, 0, 0, 0.55),
+      0 0 0 7px #0e1015,
+      0 0 0 8px #2a2b31;
+  }
+
+  .sfv-control-panel {
+    padding: 16px;
+  }
+
+  .sfv-button-grid,
+  .sfv-metrics,
+  .sfv-toggle-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

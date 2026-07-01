@@ -13,10 +13,19 @@ async function swipeUp(page: Page) {
   await page.waitForTimeout(400)
 }
 
+async function wheelDown(page: Page) {
+  const box = await page.locator('[aria-roledescription="carousel"]').boundingBox()
+  if (!box) throw new Error('container not found')
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.wheel(0, 800)
+  await page.waitForTimeout(400)
+}
+
 test('loads the first slide and HUD', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByTestId('hud')).toContainText('index:0')
   await expect(page.getByTestId('video').first()).toBeVisible()
+  await expect(page.getByTestId('control-panel')).toBeVisible()
 })
 
 test('swiping up advances the index', async ({ page }) => {
@@ -42,11 +51,73 @@ test('renders the 2x2 ad grid at slot 3', async ({ page }) => {
 test('infinite append grows the feed near the end', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByTestId('hud')).toContainText('count:8')
-  for (let i = 0; i < 6; i++) await swipeUp(page)
+  for (let i = 0; i < 6; i++) await page.getByRole('button', { name: 'Next item' }).click()
   await expect(page.getByTestId('hud')).toContainText('count:16')
 })
 
+test('stop end fetch prevents automatic append near the end', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Stop end fetch').check()
+  for (let i = 0; i < 6; i++) await page.getByRole('button', { name: 'Next item' }).click()
+  await page.waitForTimeout(400)
+  await expect(page.getByTestId('hud')).toContainText('count:8')
+})
+
+test('control panel navigates and toggles loop mode', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Next item' }).click()
+  await expect(page.getByTestId('hud')).toContainText('index:1')
+
+  await page.getByLabel('Loop feed').check()
+  await page.getByRole('button', { name: 'Reset feed' }).click()
+  await expect(page.getByTestId('hud')).toContainText('index:0')
+
+  await page.getByRole('button', { name: 'Previous item' }).click()
+  await expect(page.getByTestId('hud')).toContainText('index:7')
+})
+
+test('control panel demonstrates disabled gestures and prepend preservation', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Disable all input').check()
+  await swipeUp(page)
+  await expect(page.getByTestId('hud')).toContainText('index:0')
+
+  await page.getByRole('button', { name: 'Next item' }).click()
+  await expect(page.getByTestId('hud')).toContainText('index:1')
+
+  await page.getByRole('button', { name: 'Prepend refresh' }).click()
+  await expect(page.getByTestId('hud')).toContainText('index:3')
+})
+
+test('control panel can disable swipe wheel and keyboard independently', async ({ page }) => {
+  await page.goto('/')
+
+  await page.getByLabel('Touch swipe').uncheck()
+  await swipeUp(page)
+  await expect(page.getByTestId('hud')).toContainText('index:0')
+  await page.getByRole('button', { name: 'Next item' }).click()
+  await expect(page.getByTestId('hud')).toContainText('index:1')
+
+  await page.getByRole('button', { name: 'Reset feed' }).click()
+  await page.getByLabel('Wheel input').uncheck()
+  await wheelDown(page)
+  await expect(page.getByTestId('hud')).toContainText('index:0')
+  await page.getByRole('button', { name: 'Next item' }).click()
+  await expect(page.getByTestId('hud')).toContainText('index:1')
+
+  await page.getByRole('button', { name: 'Reset feed' }).click()
+  await page.getByLabel('Keyboard nav').uncheck()
+  await page.locator('[aria-roledescription="carousel"]').focus()
+  await page.keyboard.press('ArrowDown')
+  await page.waitForTimeout(400)
+  await expect(page.getByTestId('hud')).toContainText('index:0')
+  await page.getByRole('button', { name: 'Next item' }).click()
+  await expect(page.getByTestId('hud')).toContainText('index:1')
+})
+
 test('visual screenshots at key viewports', async ({ page }) => {
+  test.skip(!!process.env.CI, 'Visual snapshots are platform-specific and updated locally.')
+
   for (const [w, h] of [[320, 640], [768, 1024], [1024, 768], [1440, 900]] as const) {
     await page.setViewportSize({ width: w, height: h })
     await page.goto('/')
