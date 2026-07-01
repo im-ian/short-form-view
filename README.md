@@ -15,7 +15,7 @@ A smooth, virtualized, SSR-safe vertical feed — render any view per slot.
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
 ![dependencies](https://img.shields.io/badge/runtime_deps-0-22c55e)
 ![coverage](https://img.shields.io/badge/coverage-95%25-22c55e)
-![tests](https://img.shields.io/badge/tests-63_unit_·_12_e2e-22c55e)
+![tests](https://img.shields.io/badge/tests-70_unit_·_20_e2e-22c55e)
 ![license](https://img.shields.io/badge/license-MIT-black)
 
 </div>
@@ -24,7 +24,7 @@ A smooth, virtualized, SSR-safe vertical feed — render any view per slot.
 
 ## Features
 
-- **Gesture-driven** — configurable swipe threshold, velocity flick, edge resistance. Touch, mouse, wheel, and keyboard all drive one engine.
+- **Gesture-driven** — configurable swipe threshold, velocity flick, edge resistance, and per-input controls. Touch, mouse, wheel, and keyboard all drive one engine.
 - **Virtualized** — only the active item ± overscan are mounted.
 - **Data-change safe** — appending never reflows existing items; opt in to key-based active item preservation for prepends/reorders.
 - **Zero runtime dependency** — no animation library, no CSS import.
@@ -55,7 +55,7 @@ export default function Feed() {
   }, [])
 
   return (
-    <ShortFormView<Clip>
+    <ShortFormView
       data={clips}
       keyExtractor={(c) => c.id}
       threshold={0.2}                                   // commit a swipe at 20% of the viewport
@@ -83,7 +83,7 @@ export default function Feed() {
 | | |
 |---|---|
 | **Navigation** | drag · wheel/trackpad · keyboard (arrows, page, home/end) · controlled & uncontrolled `index` · imperative `ref` (`scrollToIndex` / `next` / `prev`) · optional key-preserved data changes |
-| **Tuning** | `threshold` (fraction or px) · `velocityThreshold` · `resistance` · `loop` · `transitionDuration` · `easing` · `overscan` · `ignoreInteractiveElements` |
+| **Tuning** | `threshold` (fraction or px) · `velocityThreshold` · `resistance` · `loop` · `transitionDuration` · `easing` · `overscan` · `swipeEnabled` / `wheelEnabled` / `keyboardEnabled` |
 | **Callbacks** | `onSwiped` · `onIndexChange` · `onItemEnter` / `onItemLeave` · `onPrefetch` · `onEndReached` · `onHoldStart` / `onHoldEnd` / `onTapZone` |
 | **Per-item state** | `isActive` · `isVisible` · `isSnapping` · `distance` · `index` / `activeIndex` |
 
@@ -100,7 +100,7 @@ Interactive descendants are protected by default: buttons, links, form controls,
 | Path | What |
 |------|------|
 | [`packages/short-form-view`](packages/short-form-view) | the library — gesture engine, virtualization, item lifecycle, SSR utils |
-| [`examples/next-demo`](examples/next-demo) | Next.js App Router demo with infinite append |
+| [`examples/next-demo`](examples/next-demo) | Next.js App Router demo with live controls and infinite append |
 | [`docs/superpowers`](docs/superpowers) | design spec + implementation plan |
 
 ```bash
