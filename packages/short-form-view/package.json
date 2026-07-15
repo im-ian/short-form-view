@@ -1,7 +1,17 @@
 {
   "name": "short-form-view",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Instagram/TikTok-style vertical swipe pager for React. Mounts any view per slot.",
+  "keywords": ["react", "carousel", "swipe", "short-form", "virtualized"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/im-ian/short-form-view.git",
+    "directory": "packages/short-form-view"
+  },
+  "homepage": "https://github.com/im-ian/short-form-view#readme",
+  "bugs": {
+    "url": "https://github.com/im-ian/short-form-view/issues"
+  },
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
