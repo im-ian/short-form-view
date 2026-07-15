@@ -74,6 +74,10 @@ export function useSwipeEngine(params: SwipeEngineParams): SwipeEngineApi {
   const cb = useRef({ onIndexChange, onSwiped, onEndReached })
   cb.current = { onIndexChange, onSwiped, onEndReached }
 
+  const animationDuration = Number.isFinite(transitionDuration)
+    ? Math.max(0, transitionDuration)
+    : 0
+  const canAnimate = !reducedMotion && animationDuration > 0
   const containerHeight = useCallback(() => containerRef.current?.clientHeight ?? 0, [containerRef])
 
   const paint = useCallback(
@@ -81,21 +85,28 @@ export function useSwipeEngine(params: SwipeEngineParams): SwipeEngineApi {
       const track = trackRef.current
       if (!track) return
       const h = containerHeight()
-      const dur = animate && !reducedMotion ? transitionDuration : 0
+      const dur = animate ? animationDuration : 0
       track.style.transition = dur ? `transform ${dur}ms ${easing}` : 'none'
       track.style.transform = `translate3d(0, ${-idx * h + offsetPx}px, 0)`
     },
-    [trackRef, containerHeight, reducedMotion, transitionDuration, easing],
+    [trackRef, containerHeight, animationDuration, easing],
   )
 
+  const cancelSnapEnd = useCallback(() => {
+    if (!snapTimer.current) return
+    clearTimeout(snapTimer.current)
+    snapTimer.current = null
+  }, [])
+
   const scheduleSnapEnd = useCallback(() => {
-    if (snapTimer.current) clearTimeout(snapTimer.current)
+    cancelSnapEnd()
     snapTimer.current = setTimeout(() => {
+      snapTimer.current = null
       setIsSnapping(false)
       const track = trackRef.current
       if (track) track.style.transition = 'none'
-    }, transitionDuration + 20)
-  }, [trackRef, transitionDuration])
+    }, animationDuration + 20)
+  }, [trackRef, animationDuration, cancelSnapEnd])
 
   const maybeFireEndReached = useCallback(
     (idx: number) => {
@@ -118,24 +129,27 @@ export function useSwipeEngine(params: SwipeEngineParams): SwipeEngineApi {
       if (total <= 0) return
       const from = indexRef.current
       const resolved = loop ? wrapIndex(target, total) : clampIndex(target, total)
+      if (resolved === from) {
+        maybeFireEndReached(resolved)
+        return
+      }
       const crossSeam = loop && Math.abs(resolved - from) > 1
-      const animate = (opts.animated ?? true) && !crossSeam
+      const animate = (opts.animated ?? true) && !crossSeam && canAnimate
+      cancelSnapEnd()
       indexRef.current = resolved
       skipSyncPaint.current = true
       paint(resolved, 0, animate)
       setIsSnapping(animate)
       setActiveIndex(resolved)
       if (animate) scheduleSnapEnd()
-      if (resolved !== from) {
-        cb.current.onIndexChange?.(resolved, { reason: opts.reason })
-        if (opts.reason === 'swipe') {
-          const direction: SwipeDirection = opts.direction ?? (resolved > from ? 'up' : 'down')
-          cb.current.onSwiped?.({ from, to: resolved, direction, velocity: opts.velocity ?? 0 })
-        }
+      cb.current.onIndexChange?.(resolved, { reason: opts.reason })
+      if (opts.reason === 'swipe') {
+        const direction: SwipeDirection = opts.direction ?? (resolved > from ? 'up' : 'down')
+        cb.current.onSwiped?.({ from, to: resolved, direction, velocity: opts.velocity ?? 0 })
       }
       maybeFireEndReached(resolved)
     },
-    [total, loop, paint, scheduleSnapEnd, maybeFireEndReached],
+    [total, loop, canAnimate, cancelSnapEnd, paint, scheduleSnapEnd, maybeFireEndReached],
   )
 
   const next = useCallback(
@@ -150,9 +164,9 @@ export function useSwipeEngine(params: SwipeEngineParams): SwipeEngineApi {
   const beginDrag = useCallback(() => {
     if (disabled || total <= 0) return
     draggingRef.current = true
-    if (snapTimer.current) clearTimeout(snapTimer.current)
+    cancelSnapEnd()
     setIsSnapping(false)
-  }, [disabled, total])
+  }, [disabled, total, cancelSnapEnd])
 
   const dragBy = useCallback(
     (deltaPx: number) => {
@@ -190,11 +204,15 @@ export function useSwipeEngine(params: SwipeEngineParams): SwipeEngineApi {
           return
         }
       }
-      setIsSnapping(true)
-      paint(indexRef.current, 0, true)
-      scheduleSnapEnd()
+      cancelSnapEnd()
+      setIsSnapping(canAnimate)
+      paint(indexRef.current, 0, canAnimate)
+      if (canAnimate) scheduleSnapEnd()
     },
-    [threshold, thresholdUnit, containerHeight, velocityThreshold, total, loop, goTo, paint, scheduleSnapEnd],
+    [
+      threshold, thresholdUnit, containerHeight, velocityThreshold, total, loop,
+      goTo, canAnimate, cancelSnapEnd, paint, scheduleSnapEnd,
+    ],
   )
 
   // Sync paint for external/controlled/mount/resize index changes (no animation).
@@ -219,10 +237,10 @@ export function useSwipeEngine(params: SwipeEngineParams): SwipeEngineApi {
   // Clean up timers/rAF on unmount.
   useEffect(() => {
     return () => {
-      if (snapTimer.current) clearTimeout(snapTimer.current)
+      cancelSnapEnd()
       if (rafId.current != null) cancelAnimationFrame(rafId.current)
     }
-  }, [])
+  }, [cancelSnapEnd])
 
   return { activeIndex, isSnapping, goTo, next, prev, beginDrag, dragBy, endDrag }
 }
