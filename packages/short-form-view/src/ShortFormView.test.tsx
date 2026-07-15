@@ -193,6 +193,55 @@ describe('ShortFormView', () => {
     expect(onEndReached).toHaveBeenCalled()
   })
 
+  it('fires contextual end-reached events on initial load and data growth', () => {
+    const onEndReached = vi.fn()
+    const { rerender } = render(
+      <ShortFormView<Slide>
+        data={mkData(1)}
+        keyExtractor={(s) => s.id}
+        renderItem={renderItem}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={1}
+      />,
+    )
+
+    expect(onEndReached).toHaveBeenLastCalledWith({
+      activeIndex: 0,
+      total: 1,
+      distanceFromEnd: 0,
+    })
+
+    rerender(
+      <ShortFormView<Slide>
+        data={mkData(2)}
+        keyExtractor={(s) => s.id}
+        renderItem={renderItem}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={1}
+      />,
+    )
+
+    expect(onEndReached).toHaveBeenCalledTimes(2)
+    expect(onEndReached).toHaveBeenLastCalledWith({
+      activeIndex: 0,
+      total: 2,
+      distanceFromEnd: 1,
+    })
+  })
+
+  it('accepts readonly data collections', () => {
+    const data: readonly Slide[] = mkData(2)
+    const { getByTestId } = render(
+      <ShortFormView<Slide>
+        data={data}
+        keyExtractor={(s) => s.id}
+        renderItem={renderItem}
+      />,
+    )
+
+    expect(getByTestId('slide-slide-0')).toBeInTheDocument()
+  })
+
   it('respects controlled index prop', () => {
     const { getByTestId, rerender } = render(
       <ShortFormView<Slide> data={mkData(5)} index={0} keyExtractor={(s) => s.id} renderItem={renderItem} />,

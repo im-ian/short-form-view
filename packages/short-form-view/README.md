@@ -78,7 +78,7 @@ Each slot receives an `ItemState`. A video reads `state.isActive` to play only w
 | `overscan` | `number` | `1` | Items mounted on each side of the active one. |
 | `prefetchRange` | `number` | `1` | How many items before/after the active item should receive prefetch hints. |
 | `onPrefetch` | `({ index, item, activeIndex, distance }) => void` | — | Fires once per item key when it enters the prefetch range. |
-| `onEndReached` | `() => void` | — | Fires when near the end — fetch and append more. |
+| `onEndReached` | `({ activeIndex, total, distanceFromEnd }) => void` | — | Fires on initial load, navigation, or data growth while near the end — fetch and append more. |
 | `onEndReachedThreshold` | `number` | `2` | How many items from the end triggers `onEndReached`. |
 | `onItemEnter` | `(index, item) => void` | — | An item became the active slot. |
 | `onItemLeave` | `(index, item) => void` | — | An item stopped being the active slot. |
@@ -146,6 +146,10 @@ Use `onPrefetch` to prepare nearby items without mounting more DOM. The callback
   renderItem={renderClip}
 />
 ```
+
+## Loading more
+
+`onEndReached` is checked on the initial render, after navigation, and whenever the data length changes. While the active item is within `onEndReachedThreshold`, it fires once per data length and reports `activeIndex`, `total`, and `distanceFromEnd`. Append the next page to `data`; if the result is still within the threshold, the callback can request another page.
 
 ## Navigation inputs
 

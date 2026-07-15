@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
+  EndReachedEvent,
   IndexChangeMeta,
   IndexChangeReason,
   SwipeDirection,
@@ -26,7 +27,7 @@ export interface SwipeEngineParams {
   reducedMotion: boolean
   onIndexChange?: (i: number, meta: IndexChangeMeta) => void
   onSwiped?: (e: SwipeEvent) => void
-  onEndReached?: () => void
+  onEndReached?: (e: EndReachedEvent) => void
   onEndReachedThreshold: number
 }
 
@@ -111,11 +112,20 @@ export function useSwipeEngine(params: SwipeEngineParams): SwipeEngineApi {
   const maybeFireEndReached = useCallback(
     (idx: number) => {
       if (total <= 0) return
-      const near = idx >= total - 1 - onEndReachedThreshold
+      const threshold = Number.isFinite(onEndReachedThreshold)
+        ? Math.max(0, Math.floor(onEndReachedThreshold))
+        : 0
+      const distanceFromEnd = Math.max(0, total - 1 - idx)
+      const near = distanceFromEnd <= threshold
       if (near) {
+        const callback = cb.current.onEndReached
+        if (!callback) {
+          endReachedFiredFor.current = null
+          return
+        }
         if (endReachedFiredFor.current !== total) {
           endReachedFiredFor.current = total
-          cb.current.onEndReached?.()
+          callback({ activeIndex: idx, total, distanceFromEnd })
         }
       } else {
         endReachedFiredFor.current = null
@@ -233,6 +243,13 @@ export function useSwipeEngine(params: SwipeEngineParams): SwipeEngineApi {
     ro.observe(el)
     return () => ro.disconnect()
   }, [containerRef, paint])
+
+  // Treat reaching the end as a lifecycle condition, not only as a result of
+  // navigation. This lets a short initial page request more data immediately
+  // and re-checks the condition whenever the data size grows.
+  useEffect(() => {
+    maybeFireEndReached(indexRef.current)
+  }, [maybeFireEndReached, onEndReached])
 
   // Clean up timers/rAF on unmount.
   useEffect(() => {

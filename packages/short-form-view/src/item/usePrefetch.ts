@@ -32,7 +32,7 @@ export function computePrefetchIndices(
 }
 
 export function usePrefetch<T>(p: {
-  data: T[]
+  data: readonly T[]
   activeIndex: number
   loop: boolean
   range: number

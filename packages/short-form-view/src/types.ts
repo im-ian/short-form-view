@@ -37,6 +37,12 @@ export interface PrefetchEvent<T> {
   distance: number
 }
 
+export interface EndReachedEvent {
+  activeIndex: number
+  total: number
+  distanceFromEnd: number
+}
+
 export interface ShortFormHandle {
   scrollToIndex: (index: number, opts?: { animated?: boolean }) => void
   next: () => void
@@ -45,7 +51,7 @@ export interface ShortFormHandle {
 }
 
 export interface ShortFormViewProps<T> {
-  data: T[]
+  data: readonly T[]
   renderItem: (item: T, state: ItemState) => ReactNode
   keyExtractor: (item: T, index: number) => string | number
 
@@ -74,7 +80,7 @@ export interface ShortFormViewProps<T> {
   overscan?: number
   prefetchRange?: number
   onPrefetch?: (e: PrefetchEvent<T>) => void
-  onEndReached?: () => void
+  onEndReached?: (e: EndReachedEvent) => void
   onEndReachedThreshold?: number
 
   onItemEnter?: (index: number, item: T) => void

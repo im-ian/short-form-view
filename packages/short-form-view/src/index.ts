@@ -6,6 +6,7 @@ export type {
   SwipeEvent,
   ZoneEvent,
   PrefetchEvent,
+  EndReachedEvent,
   IndexChangeMeta,
   SwipeDirection,
   ZoneSide,
