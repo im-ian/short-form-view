@@ -101,7 +101,7 @@ Each slot receives an `ItemState`. A video reads `state.isActive` to play only w
 | `isActive` | `boolean` | This item is the focused slot (use for video play/pause). |
 | `isVisible` | `boolean` | Active or peeking during a drag. |
 | `isSnapping` | `boolean` | A snap animation is in progress. |
-| `distance` | `number` | `index - activeIndex` (signed). |
+| `distance` | `number` | Signed distance from the active item (the shortest wrapped distance in `loop` mode). |
 
 ### Imperative handle (`ref`)
 

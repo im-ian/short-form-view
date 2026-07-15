@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import type { ItemState } from '../types'
+import { relativeIndexDistance } from '../engine/math'
 import { useItemLifecycle } from './useItemLifecycle'
 
 export interface ItemRendererProps<T> {
@@ -9,6 +10,7 @@ export interface ItemRendererProps<T> {
   activeIndex: number
   isSnapping: boolean
   total: number
+  loop: boolean
   renderItem: (item: T, state: ItemState) => ReactNode
   itemClassName?: string
   itemStyle?: CSSProperties
@@ -19,11 +21,12 @@ export interface ItemRendererProps<T> {
 
 function ItemRendererInner<T>(props: ItemRendererProps<T>) {
   const {
-    item, index, activeIndex, isSnapping, total, renderItem, itemClassName, itemStyle,
+    item, index, activeIndex, isSnapping, total, loop, renderItem, itemClassName, itemStyle,
     getItemAriaLabel, onItemEnter, onItemLeave,
   } = props
 
-  const distance = index - activeIndex
+  const distance = relativeIndexDistance(index, activeIndex, total, loop)
+  const position = activeIndex + distance
   const isActive = distance === 0
   const isVisible = Math.abs(distance) <= 1
   const state: ItemState = { index, activeIndex, isActive, isVisible, isSnapping, distance }
@@ -37,7 +40,7 @@ function ItemRendererInner<T>(props: ItemRendererProps<T>) {
     left: 0,
     width: '100%',
     height: '100%',
-    transform: `translateY(${index * 100}%)`,
+    transform: `translateY(${position * 100}%)`,
     ...itemStyle,
   }
 

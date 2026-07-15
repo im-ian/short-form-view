@@ -182,6 +182,7 @@ function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<S
               activeIndex={engine.activeIndex}
               isSnapping={engine.isSnapping}
               total={total}
+              loop={loop}
               renderItem={renderItem}
               itemClassName={itemClassName}
               itemStyle={itemStyle}

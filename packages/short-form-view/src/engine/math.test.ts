@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { clampIndex, wrapIndex, resolveThreshold, applyResistance, decideCommit } from './math'
+import {
+  applyResistance,
+  clampIndex,
+  decideCommit,
+  relativeIndexDistance,
+  resolveThreshold,
+  wrapIndex,
+} from './math'
 
 describe('clampIndex', () => {
   it('clamps within bounds', () => {
@@ -26,6 +33,17 @@ describe('wrapIndex', () => {
   it('normalizes fractional and non-finite indices', () => {
     expect(wrapIndex(5.9, 5)).toBe(0)
     expect(wrapIndex(Number.NaN, 5)).toBe(0)
+  })
+})
+
+describe('relativeIndexDistance', () => {
+  it('uses the shortest distance across loop boundaries', () => {
+    expect(relativeIndexDistance(4, 0, 5, true)).toBe(-1)
+    expect(relativeIndexDistance(0, 4, 5, true)).toBe(1)
+  })
+
+  it('keeps the ordinary signed distance when looping is disabled', () => {
+    expect(relativeIndexDistance(4, 0, 5, false)).toBe(4)
   })
 })
 

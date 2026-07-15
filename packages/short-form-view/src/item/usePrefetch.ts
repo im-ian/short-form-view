@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { PrefetchEvent } from '../types'
+import { relativeIndexDistance } from '../engine/math'
 
 export function computePrefetchIndices(
   activeIndex: number,
@@ -28,14 +29,6 @@ export function computePrefetchIndices(
   }
 
   return out
-}
-
-function relativeDistance(index: number, activeIndex: number, total: number, loop: boolean): number {
-  if (!loop || total <= 0) return index - activeIndex
-  let distance = index - activeIndex
-  if (distance > total / 2) distance -= total
-  if (distance < -total / 2) distance += total
-  return distance
 }
 
 export function usePrefetch<T>(p: {
@@ -69,7 +62,7 @@ export function usePrefetch<T>(p: {
         index,
         item,
         activeIndex,
-        distance: relativeDistance(index, activeIndex, total, loop),
+        distance: relativeIndexDistance(index, activeIndex, total, loop),
       })
     }
   }, [activeIndex, data, loop, range])

@@ -17,6 +17,19 @@ export function wrapIndex(index: number, total: number): number {
   return ((normalized % size) + size) % size
 }
 
+export function relativeIndexDistance(
+  index: number,
+  activeIndex: number,
+  total: number,
+  loop: boolean,
+): number {
+  let distance = index - activeIndex
+  if (!loop || total <= 0) return distance
+  if (distance > total / 2) distance -= total
+  if (distance < -total / 2) distance += total
+  return distance
+}
+
 export function resolveThreshold(
   threshold: number,
   unit: ThresholdUnit,

@@ -55,6 +55,38 @@ describe('ShortFormView', () => {
     expect(queryByTestId('slide-slide-2')).not.toBeInTheDocument()
   })
 
+  it('positions wrapped loop neighbors next to the active item', () => {
+    const { getByTestId } = renderView({
+      loop: true,
+      renderItem: (slide, state) => (
+        <div
+          data-testid={`loop-${slide.id}`}
+          data-distance={state.distance}
+          data-visible={state.isVisible}
+        />
+      ),
+    })
+
+    const wrappedPrevious = getByTestId('loop-s4')
+    expect(wrappedPrevious.parentElement).toHaveStyle({ transform: 'translateY(-100%)' })
+    expect(wrappedPrevious).toHaveAttribute('data-distance', '-1')
+    expect(wrappedPrevious).toHaveAttribute('data-visible', 'true')
+  })
+
+  it('positions the first item after the last item at the loop boundary', () => {
+    const { getByTestId } = renderView({
+      initialIndex: 4,
+      loop: true,
+      renderItem: (slide, state) => (
+        <div data-testid={`loop-${slide.id}`} data-distance={state.distance} />
+      ),
+    })
+
+    const wrappedNext = getByTestId('loop-s0')
+    expect(wrappedNext.parentElement).toHaveStyle({ transform: 'translateY(500%)' })
+    expect(wrappedNext).toHaveAttribute('data-distance', '1')
+  })
+
   it('marks only the active item active', () => {
     const { getByTestId } = renderView()
     expect(getByTestId('slide-slide-0').getAttribute('data-active')).toBe('true')
