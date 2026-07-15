@@ -23,4 +23,8 @@ describe('computeWindowIndices', () => {
   it('clamps a negative overscan to just the active item', () => {
     expect(computeWindowIndices(3, 10, -1, false)).toEqual([3])
   })
+  it('normalizes fractional and non-finite overscan values', () => {
+    expect(computeWindowIndices(3, 10, 1.9, false)).toEqual([2, 3, 4])
+    expect(computeWindowIndices(3, 10, Number.NaN, false)).toEqual([3])
+  })
 })

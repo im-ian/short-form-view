@@ -10,6 +10,11 @@ describe('clampIndex', () => {
   it('returns 0 for empty list', () => {
     expect(clampIndex(2, 0)).toBe(0)
   })
+  it('normalizes fractional and non-finite indices', () => {
+    expect(clampIndex(2.9, 5)).toBe(2)
+    expect(clampIndex(Number.NaN, 5)).toBe(0)
+    expect(clampIndex(Number.POSITIVE_INFINITY, 5)).toBe(0)
+  })
 })
 
 describe('wrapIndex', () => {
@@ -17,6 +22,10 @@ describe('wrapIndex', () => {
     expect(wrapIndex(5, 5)).toBe(0)
     expect(wrapIndex(-1, 5)).toBe(4)
     expect(wrapIndex(6, 5)).toBe(1)
+  })
+  it('normalizes fractional and non-finite indices', () => {
+    expect(wrapIndex(5.9, 5)).toBe(0)
+    expect(wrapIndex(Number.NaN, 5)).toBe(0)
   })
 })
 

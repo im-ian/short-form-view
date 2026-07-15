@@ -51,13 +51,15 @@ export interface SwipeEngineApi {
 
 export function useSwipeEngine(params: SwipeEngineParams): SwipeEngineApi {
   const {
-    total, containerRef, trackRef, initialIndex, loop, disabled,
+    total, containerRef, trackRef, initialIndex, controlledIndex, loop, disabled,
     threshold, thresholdUnit, velocityThreshold, resistance,
     transitionDuration, easing, reducedMotion,
     onIndexChange, onSwiped, onEndReached, onEndReachedThreshold,
   } = params
 
-  const [activeIndex, setActiveIndex] = useState(() => clampIndex(initialIndex, Math.max(total, 1)))
+  const [activeIndex, setActiveIndex] = useState(() =>
+    clampIndex(controlledIndex ?? initialIndex, Math.max(total, 1)),
+  )
   const [isSnapping, setIsSnapping] = useState(false)
 
   const indexRef = useRef(activeIndex)

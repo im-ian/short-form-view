@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, act, fireEvent, createEvent } from '@testing-library/react'
 import { createRef } from 'react'
 import { ShortFormView } from './ShortFormView'
-import type { ShortFormHandle, ShortFormViewProps } from './types'
+import type { ItemState, ShortFormHandle, ShortFormViewProps } from './types'
 
 interface Slide { id: string; label: string }
 
@@ -10,7 +10,7 @@ function mkData(n: number): Slide[] {
   return Array.from({ length: n }, (_, i) => ({ id: `s${i}`, label: `slide-${i}` }))
 }
 
-const renderItem = (s: Slide, st: { isActive: boolean }) => (
+const renderItem = (s: Slide, st: ItemState) => (
   <div data-testid={`slide-${s.label}`} data-active={st.isActive}>{s.label}</div>
 )
 
@@ -169,6 +169,23 @@ describe('ShortFormView', () => {
       <ShortFormView<Slide> data={mkData(5)} index={2} keyExtractor={(s) => s.id} renderItem={renderItem} />,
     )
     expect(getByTestId('slide-slide-2').getAttribute('data-active')).toBe('true')
+  })
+
+  it('uses the controlled index on the first render', () => {
+    const firstRender = vi.fn(renderItem)
+
+    render(
+      <ShortFormView<Slide>
+        data={mkData(5)}
+        initialIndex={0}
+        index={3}
+        keyExtractor={(s) => s.id}
+        renderItem={firstRender}
+      />,
+    )
+
+    expect(firstRender.mock.calls[0]?.[1].activeIndex).toBe(3)
+    expect(firstRender.mock.calls.some(([, state]) => state.activeIndex === 0)).toBe(false)
   })
 
   it('disables text selection and prevents native drag on the container', () => {

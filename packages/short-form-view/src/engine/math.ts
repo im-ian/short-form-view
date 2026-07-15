@@ -1,13 +1,20 @@
 import type { ThresholdUnit } from '../types'
 
+function finiteInteger(value: number): number {
+  return Number.isFinite(value) ? Math.trunc(value) : 0
+}
+
 export function clampIndex(index: number, total: number): number {
-  if (total <= 0) return 0
-  return Math.max(0, Math.min(index, total - 1))
+  const size = Math.max(0, finiteInteger(total))
+  if (size <= 0) return 0
+  return Math.max(0, Math.min(finiteInteger(index), size - 1))
 }
 
 export function wrapIndex(index: number, total: number): number {
-  if (total <= 0) return 0
-  return ((index % total) + total) % total
+  const size = Math.max(0, finiteInteger(total))
+  if (size <= 0) return 0
+  const normalized = finiteInteger(index)
+  return ((normalized % size) + size) % size
 }
 
 export function resolveThreshold(
