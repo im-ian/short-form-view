@@ -153,7 +153,7 @@ Use `onPrefetch` to prepare nearby items without mounting more DOM. The callback
 
 ## Navigation inputs
 
-Touch / mouse drag, mouse wheel / trackpad, and keyboard (`ArrowUp`/`ArrowDown`, `PageUp`/`PageDown`, `Home`, `End`) all drive the same engine. The container is focusable for keyboard use.
+Touch / mouse drag, mouse wheel / trackpad, and keyboard (`ArrowUp`/`ArrowDown`, `PageUp`/`PageDown`, `Home`, `End`) all drive the same engine. Pointer gestures lock to vertical intent, so nested horizontal carousels and scrubbers remain usable. The container is focusable for keyboard use.
 
 Each input channel can be disabled independently:
 

@@ -51,6 +51,36 @@ describe('usePointerGestures', () => {
     expect(delta).toBe(-100) // 300 - 400
   })
 
+  it('does not capture a horizontal gesture as a vertical swipe', () => {
+    const beginDrag = vi.fn(), dragBy = vi.fn(), endDrag = vi.fn()
+    const { getByTestId } = render(
+      <Harness beginDrag={beginDrag} dragBy={dragBy} endDrag={endDrag} />,
+    )
+    const c = getByTestId('c'); mockRect(c)
+
+    fireEvent.pointerDown(c, { clientX: 50, clientY: 300, pointerId: 1 })
+    fireEvent.pointerMove(c, { clientX: 250, clientY: 310, pointerId: 1 })
+    fireEvent.pointerUp(c, { clientX: 250, clientY: 310, pointerId: 1 })
+
+    expect(beginDrag).not.toHaveBeenCalled()
+    expect(dragBy).not.toHaveBeenCalled()
+    expect(endDrag).not.toHaveBeenCalled()
+  })
+
+  it('snaps back instead of committing when the pointer is cancelled', () => {
+    const beginDrag = vi.fn(), dragBy = vi.fn(), endDrag = vi.fn()
+    const { getByTestId } = render(
+      <Harness beginDrag={beginDrag} dragBy={dragBy} endDrag={endDrag} />,
+    )
+    const c = getByTestId('c'); mockRect(c)
+
+    fireEvent.pointerDown(c, { clientX: 150, clientY: 500, pointerId: 1 })
+    fireEvent.pointerMove(c, { clientX: 150, clientY: 100, pointerId: 1 })
+    fireEvent.pointerCancel(c, { clientX: 150, clientY: 100, pointerId: 1 })
+
+    expect(endDrag).toHaveBeenCalledWith(0, 0)
+  })
+
   it('treats a stationary press+release as a tap with the correct zone', () => {
     const onTapZone = vi.fn()
     const { getByTestId } = render(

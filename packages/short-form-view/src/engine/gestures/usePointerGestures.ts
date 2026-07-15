@@ -127,7 +127,10 @@ export function usePointerGestures(p: {
         s.moved = true
         clearHold()
         if (s.holdFired) { cfg.onHoldEnd?.({ side: s.side, index: cfg.getIndex() }); s.holdFired = false }
-        if (cfg.swipeEnabled) {
+        // Lock to vertical intent once the pointer leaves the slop radius. A
+        // horizontal carousel or scrubber nested in an item must keep control
+        // of its gesture instead of moving the vertical feed by a few pixels.
+        if (cfg.swipeEnabled && Math.abs(dy) >= Math.abs(dx)) {
           s.dragging = true
           cfg.engine.beginDrag()
         }
@@ -151,7 +154,10 @@ export function usePointerGestures(p: {
       try { el.releasePointerCapture(e.pointerId) } catch { /* noop */ }
       const dy = e.clientY - s.startY
       if (s.dragging) {
-        cfg.engine.endDrag(dy, s.velocity)
+        // Cancellation means the browser/OS took ownership of the gesture.
+        // Reset the track without interpreting the last delta as navigation.
+        if (e.type === 'pointercancel') cfg.engine.endDrag(0, 0)
+        else cfg.engine.endDrag(dy, s.velocity)
         return
       }
       if (s.moved) return
