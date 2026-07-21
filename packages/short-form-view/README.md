@@ -194,5 +194,7 @@ The component carries its own `'use client'` directive and guards all browser ac
 
 - The track transform is written imperatively (ref + `requestAnimationFrame`) during a drag, so there are **no React re-renders per frame**.
 - The only state that flips on a swipe is `activeIndex`, which triggers one minimal re-render to recompute the mounted window.
-- Item wrappers are memoized; `renderItem` re-runs only when that item's `ItemState` changes.
+- Item wrappers and rendered content are memoized. Appending can update wrapper metadata such as the total slide count without re-running unchanged item content; `renderItem` runs again when its item reference, `ItemState`, or the `renderItem` callback changes.
 - Only `active ± overscan` items are in the DOM at any time.
+
+For the best result when the host component re-renders frequently, keep existing item objects and the `renderItem` callback stable (for example, append with `[...previous, ...nextPage]` and use `useCallback` for an inline renderer).

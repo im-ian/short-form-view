@@ -115,6 +115,30 @@ describe('ShortFormView', () => {
     expect(getByTestId('slide-slide-2').getAttribute('data-active')).toBe('true')
   })
 
+  it('does not re-run unchanged item content when data is appended', () => {
+    const base = mkData(3)
+    const trackedRenderItem = vi.fn(renderItem)
+    const { rerender, getByTestId } = render(
+      <ShortFormView<Slide>
+        data={base}
+        keyExtractor={(s) => s.id}
+        renderItem={trackedRenderItem}
+      />,
+    )
+    trackedRenderItem.mockClear()
+
+    rerender(
+      <ShortFormView<Slide>
+        data={[...base, { id: 's3', label: 'slide-3' }]}
+        keyExtractor={(s) => s.id}
+        renderItem={trackedRenderItem}
+      />,
+    )
+
+    expect(trackedRenderItem).not.toHaveBeenCalled()
+    expect(getByTestId('slide-slide-0').parentElement).toHaveAttribute('aria-label', 'Slide 1 of 4')
+  })
+
   it('preserves the active item by key when data is prepended', () => {
     const ref = createRef<ShortFormHandle>()
     const onIndexChange = vi.fn()
@@ -148,6 +172,102 @@ describe('ShortFormView', () => {
     expect(ref.current!.getIndex()).toBe(2)
     expect(getByTestId('slide-slide-1').getAttribute('data-active')).toBe('true')
     expect(onIndexChange).toHaveBeenCalledWith(2, { reason: 'data' })
+  })
+
+  it('does not emit leave and enter for the preserved active item during a prepend', () => {
+    const ref = createRef<ShortFormHandle>()
+    const onItemEnter = vi.fn()
+    const onItemLeave = vi.fn()
+    const base = mkData(3)
+    const { rerender } = render(
+      <ShortFormView<Slide>
+        ref={ref}
+        data={base}
+        keyExtractor={(s) => s.id}
+        renderItem={renderItem}
+        preserveActiveItemOnDataChange
+        onItemEnter={onItemEnter}
+        onItemLeave={onItemLeave}
+      />,
+    )
+
+    act(() => ref.current!.scrollToIndex(1, { animated: false }))
+    onItemEnter.mockClear()
+    onItemLeave.mockClear()
+
+    rerender(
+      <ShortFormView<Slide>
+        ref={ref}
+        data={[{ id: 's-new', label: 'slide-new' }, ...base]}
+        keyExtractor={(s) => s.id}
+        renderItem={renderItem}
+        preserveActiveItemOnDataChange
+        onItemEnter={onItemEnter}
+        onItemLeave={onItemLeave}
+      />,
+    )
+
+    expect(onItemEnter).not.toHaveBeenCalled()
+    expect(onItemLeave).not.toHaveBeenCalled()
+  })
+
+  it('does not prefetch an item outside the corrected range during a prepend', () => {
+    const onPrefetch = vi.fn()
+    const base = mkData(3)
+    const { rerender } = render(
+      <ShortFormView<Slide>
+        data={base}
+        initialIndex={1}
+        keyExtractor={(s) => s.id}
+        renderItem={renderItem}
+        preserveActiveItemOnDataChange
+        prefetchRange={1}
+        onPrefetch={onPrefetch}
+      />,
+    )
+    onPrefetch.mockClear()
+
+    rerender(
+      <ShortFormView<Slide>
+        data={[{ id: 's-new', label: 'slide-new' }, ...base]}
+        initialIndex={1}
+        keyExtractor={(s) => s.id}
+        renderItem={renderItem}
+        preserveActiveItemOnDataChange
+        prefetchRange={1}
+        onPrefetch={onPrefetch}
+      />,
+    )
+
+    expect(onPrefetch).not.toHaveBeenCalled()
+  })
+
+  it('preserves the navigation target when navigation and a prepend are batched', () => {
+    const ref = createRef<ShortFormHandle>()
+    const base = mkData(4)
+    const props = {
+      ref,
+      initialIndex: 1,
+      keyExtractor: (s: Slide) => s.id,
+      renderItem,
+      preserveActiveItemOnDataChange: true,
+    }
+    const { rerender, getByTestId } = render(
+      <ShortFormView<Slide> {...props} data={base} />,
+    )
+
+    act(() => {
+      ref.current!.next()
+      rerender(
+        <ShortFormView<Slide>
+          {...props}
+          data={[{ id: 's-new', label: 'slide-new' }, ...base]}
+        />,
+      )
+    })
+
+    expect(ref.current!.getIndex()).toBe(3)
+    expect(getByTestId('slide-slide-2')).toHaveAttribute('data-active', 'true')
   })
 
   it('adds slide accessibility metadata to item wrappers', () => {

@@ -2,7 +2,7 @@
 import { useCallback, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { ShortFormView } from 'short-form-view'
-import type { IndexChangeReason, ShortFormHandle } from 'short-form-view'
+import type { IndexChangeReason, ItemState, ShortFormHandle } from 'short-form-view'
 import { makeFeed, type FeedItem } from '../components/feed'
 import { VideoCard } from '../components/VideoCard'
 import { AdGrid } from '../components/AdGrid'
@@ -114,7 +114,7 @@ export default function Page() {
             style={{ height: '100%' }}
             data={items}
             index={activeIndex}
-            keyExtractor={(it) => it.id}
+            keyExtractor={feedKeyExtractor}
             threshold={threshold}
             transitionDuration={transitionDuration}
             overscan={overscan}
@@ -129,22 +129,13 @@ export default function Page() {
             preserveActiveItemOnDataChange={preserveActiveItem}
             prefetchRange={prefetchRange}
             ariaLabel="Short-form video feed"
-            getItemAriaLabel={(index, item, total) => `${labelForKind(item.kind)} ${index + 1} of ${total}`}
+            getItemAriaLabel={getFeedItemAriaLabel}
             onIndexChange={handleIndexChange}
             onSwiped={({ to, direction }) => pushEvent(`swiped ${direction} to ${to}`)}
             onPrefetch={handlePrefetch}
             onEndReached={loadMore}
             onEndReachedThreshold={2}
-            renderItem={(item, state) => {
-              switch (item.kind) {
-                case 'video':
-                  return <VideoCard item={item} active={state.isActive} />
-                case 'ad-grid':
-                  return <AdGrid item={item} />
-                case 'video-ad':
-                  return <VideoAdBanner item={item} active={state.isActive} />
-              }
-            }}
+            renderItem={renderFeedItem}
           />
 
           <TopTabs />
@@ -201,6 +192,25 @@ export default function Page() {
       />
     </div>
   )
+}
+
+function feedKeyExtractor(item: FeedItem): string {
+  return item.id
+}
+
+function getFeedItemAriaLabel(index: number, item: FeedItem, total: number): string {
+  return `${labelForKind(item.kind)} ${index + 1} of ${total}`
+}
+
+function renderFeedItem(item: FeedItem, state: ItemState) {
+  switch (item.kind) {
+    case 'video':
+      return <VideoCard item={item} active={state.isActive} />
+    case 'ad-grid':
+      return <AdGrid item={item} />
+    case 'video-ad':
+      return <VideoAdBanner item={item} active={state.isActive} />
+  }
 }
 
 function labelForKind(kind: FeedItem['kind']): string {

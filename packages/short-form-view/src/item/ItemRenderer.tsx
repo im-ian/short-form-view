@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import type { ItemState } from '../types'
 import { relativeIndexDistance } from '../engine/math'
@@ -29,7 +29,11 @@ function ItemRendererInner<T>(props: ItemRendererProps<T>) {
   const position = activeIndex + distance
   const isActive = distance === 0
   const isVisible = Math.abs(distance) <= 1
-  const state: ItemState = { index, activeIndex, isActive, isVisible, isSnapping, distance }
+  const state = useMemo<ItemState>(
+    () => ({ index, activeIndex, isActive, isVisible, isSnapping, distance }),
+    [index, activeIndex, isActive, isVisible, isSnapping, distance],
+  )
+  const content = useMemo(() => renderItem(item, state), [item, renderItem, state])
   const ariaLabel = getItemAriaLabel?.(index, item, total) ?? `Slide ${index + 1} of ${total}`
 
   useItemLifecycle(isActive, index, item, onItemEnter, onItemLeave)
@@ -55,7 +59,7 @@ function ItemRendererInner<T>(props: ItemRendererProps<T>) {
       aria-current={isActive ? 'true' : undefined}
       aria-hidden={!isActive}
     >
-      {renderItem(item, state)}
+      {content}
     </div>
   )
 }

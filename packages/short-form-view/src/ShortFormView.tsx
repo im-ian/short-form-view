@@ -1,6 +1,6 @@
 'use client'
 
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
+import { forwardRef, useImperativeHandle, useRef } from 'react'
 import type { CSSProperties, ForwardedRef, ReactElement, Ref } from 'react'
 import type { ShortFormHandle, ShortFormViewProps } from './types'
 import { useSwipeEngine } from './engine/useSwipeEngine'
@@ -12,7 +12,7 @@ import { ItemRenderer } from './item/ItemRenderer'
 import { usePrefetch } from './item/usePrefetch'
 import { usePrefersReducedMotion } from './ssr/usePrefersReducedMotion'
 import { useIsomorphicLayoutEffect } from './ssr/useIsomorphicLayoutEffect'
-import { clampIndex } from './engine/math'
+import { clampIndex, wrapIndex } from './engine/math'
 
 function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<ShortFormHandle>) {
   const {
@@ -37,6 +37,7 @@ function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<S
   const containerRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const activeKeyRef = useRef<string | number | null>(null)
+  const committedIndexRef = useRef(0)
   const previousDataRef = useRef(data)
   const reducedMotion = usePrefersReducedMotion()
 
@@ -49,57 +50,66 @@ function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<S
     onIndexChange, onSwiped, onEndReached, onEndReachedThreshold,
   })
 
-  // Controlled-mode sync: follow the parent's index prop.
-  useEffect(() => {
-    if (controlledIndex == null) return
-    if (controlledIndex !== engine.activeIndex) {
-      engine.goTo(controlledIndex, { reason: 'api', animated: false })
+  // Resolve data and controlled-index changes for this render, before item
+  // lifecycle and prefetch effects can observe an outdated active index. The
+  // engine is synchronized in the layout effect below, before browser paint.
+  const dataChanged = previousDataRef.current !== data
+  const clampedActiveIndex = clampIndex(engine.activeIndex, Math.max(total, 1))
+  let renderedActiveIndex = clampedActiveIndex
+  let syncReason: 'api' | 'data' = 'data'
+
+  if (total > 0) {
+    const controlledChanged = controlledIndex != null && controlledIndex !== engine.activeIndex
+
+    if (controlledChanged) {
+      renderedActiveIndex = loop
+        ? wrapIndex(controlledIndex, total)
+        : clampIndex(controlledIndex, total)
+      syncReason = 'api'
+    } else if (dataChanged && preserveActiveItemOnDataChange) {
+      // If navigation and a data update were batched together, preserve the
+      // item at the newly requested index from the previous collection. For a
+      // data-only update, preserve the item that was active at the last commit.
+      let keyToPreserve = activeKeyRef.current
+      if (engine.activeIndex !== committedIndexRef.current) {
+        const navigatedItem = previousDataRef.current[engine.activeIndex]
+        if (navigatedItem != null) {
+          keyToPreserve = keyExtractor(navigatedItem, engine.activeIndex)
+        }
+      }
+
+      if (keyToPreserve != null) {
+        const preservedIndex = data.findIndex((item, i) => keyExtractor(item, i) === keyToPreserve)
+        if (preservedIndex >= 0) renderedActiveIndex = preservedIndex
+      }
     }
-  }, [controlledIndex, engine.activeIndex, engine.goTo])
+  }
 
   useIsomorphicLayoutEffect(() => {
-    const dataChanged = previousDataRef.current !== data
     previousDataRef.current = data
 
     if (total <= 0) {
       activeKeyRef.current = null
+      committedIndexRef.current = 0
       return
     }
 
-    if (controlledIndex != null && controlledIndex !== engine.activeIndex) {
-      const controlled = clampIndex(controlledIndex, total)
-      activeKeyRef.current = keyExtractor(data[controlled] as T, controlled)
-      return
+    activeKeyRef.current = keyExtractor(
+      data[renderedActiveIndex] as T,
+      renderedActiveIndex,
+    )
+    committedIndexRef.current = renderedActiveIndex
+
+    if (renderedActiveIndex !== engine.activeIndex) {
+      engine.goTo(renderedActiveIndex, { reason: syncReason, animated: false })
     }
-
-    const clampedActive = clampIndex(engine.activeIndex, total)
-    let targetIndex: number | null = null
-    const activeKey = activeKeyRef.current
-
-    if (dataChanged) {
-      if (preserveActiveItemOnDataChange && activeKey != null) {
-        const preservedIndex = data.findIndex((item, i) => keyExtractor(item, i) === activeKey)
-        if (preservedIndex >= 0) targetIndex = preservedIndex
-      }
-      if (targetIndex == null && clampedActive !== engine.activeIndex) {
-        targetIndex = clampedActive
-      }
-    }
-
-    if (targetIndex != null && targetIndex !== engine.activeIndex) {
-      activeKeyRef.current = keyExtractor(data[targetIndex] as T, targetIndex)
-      engine.goTo(targetIndex, { reason: 'data', animated: false })
-      return
-    }
-
-    activeKeyRef.current = keyExtractor(data[clampedActive] as T, clampedActive)
   }, [
-    controlledIndex,
     data,
     engine.activeIndex,
     engine.goTo,
     keyExtractor,
-    preserveActiveItemOnDataChange,
+    renderedActiveIndex,
+    syncReason,
     total,
   ])
 
@@ -112,7 +122,7 @@ function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<S
 
   usePointerGestures({
     containerRef, engine,
-    getIndex: () => engine.activeIndex,
+    getIndex: () => renderedActiveIndex,
     zones, holdDelay, disabled,
     swipeEnabled, holdEnabled, tapZonesEnabled, ignoreInteractiveElements,
     onHoldStart, onHoldEnd, onTapZone,
@@ -121,14 +131,14 @@ function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<S
   useKeyboardNav({ containerRef, engine, total, disabled: disabled || !keyboardEnabled })
   usePrefetch({
     data,
-    activeIndex: engine.activeIndex,
+    activeIndex: renderedActiveIndex,
     loop,
     range: prefetchRange,
     keyExtractor,
     onPrefetch,
   })
 
-  const windowIndices = useWindowedRange(engine.activeIndex, total, overscan, loop)
+  const windowIndices = useWindowedRange(renderedActiveIndex, total, overscan, loop)
 
   // Let the browser claim native touch scrolling only when we handle no pointer
   // gesture at all; with swipe off but hold/tap on, 'none' keeps them reliable.
@@ -157,7 +167,7 @@ function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<S
     width: '100%',
     height: '100%',
     willChange: 'transform',
-    transform: `translateY(${-engine.activeIndex * 100}%)`,
+    transform: `translateY(${-renderedActiveIndex * 100}%)`,
   }
 
   return (
@@ -179,7 +189,7 @@ function ShortFormViewInner<T>(props: ShortFormViewProps<T>, ref: ForwardedRef<S
               key={keyExtractor(item, i)}
               item={item}
               index={i}
-              activeIndex={engine.activeIndex}
+              activeIndex={renderedActiveIndex}
               isSnapping={engine.isSnapping}
               total={total}
               loop={loop}
